@@ -61,3 +61,7 @@ fabric.properties
 
 # Editor-based Rest Client
 .idea/httpRequests
+
+# Compiled Executables and Object Files
+*.exe
+*.o
