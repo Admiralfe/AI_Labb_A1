@@ -1,35 +1,36 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
-#include "Matrix.h"
+#include "matrix.h"
 #include "globals.h"
 
 typedef vector<number> vec;
-typedef Matrix mat;
+typedef matrix mat;
 
 int main() {
-    std::cout << "test\n";
     mat A(3, 2);
-    vec x(2);
+    A.fill({
+        1, 2,
+        3, 5,
+        7, 9
+    });
 
-    cout << "initialized\n";
-    cout.flush();
+    vec x = {
+        1,
+        2
+    };
 
-    A.set(0, 0, 1);
-    A.set(0, 1, 2);
-    A.set(1, 0, 5);
-    A.set(1, 1, 7);
-    A.set(2, 0, 13);
-    A.set(2, 1, 17);
+    mat B(2, 4);
 
-    cout << "assigned A\n";
-
-
-    x[0] = 1;
-    x[1] = 2;
+    B.fill({
+        1, 2, 3, 4,
+        5, 6, 7, 8
+    });
 
     vec y = A * x;
-    std::cout << y.size() << std::endl;
+    mat C = A * B;
+
+    cout << A << "times\n" << B << "is\n" << C << endl;
 
     for (int i = 0; i < y.size(); i++)
         std::cout << y[i] << std::endl;

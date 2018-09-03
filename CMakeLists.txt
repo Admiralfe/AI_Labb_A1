@@ -3,4 +3,4 @@ project(AILabb_A1)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(AILabb_A1 main.cpp Matrix.cpp Matrix.h)
+add_executable(AILabb_A1 main.cpp matrix.cpp matrix.h)
