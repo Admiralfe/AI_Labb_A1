@@ -27,12 +27,16 @@ int main() {
         5, 6, 7, 8
     });
 
+
+
     vec y = A * x;
     mat C = A * B;
 
     cout << A << "times\n" << B << "is\n" << C << endl;
 
-    for (int i = 0; i < y.size(); i++)
-        std::cout << y[i] << std::endl;
+    cout << y << endl;
+
+    cout << A.get_col(1);
+
     return 0;
 }

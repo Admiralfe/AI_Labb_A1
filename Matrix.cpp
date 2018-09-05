@@ -89,6 +89,31 @@ string matrix::to_string() const {
     return res.str();
 }
 
+vector<number> matrix::get_col(int j) {
+    vector<number> res = vector<number>(height);
+
+    for (int i = 0; i < height; i++)
+        res[i] = elements[i][j];
+
+    return res;
+}
+
 ostream& operator<< (ostream& outs, const matrix& m) {
 	return outs << m.to_string();
+}
+
+ostream& operator<< (ostream& outs, const vector<number>& v) {
+    for (int i = 0; i < v.size(); i++)
+	    outs << v[i] << endl;
+    return outs;
+}
+
+number operator *(const vector<number>& a, const vector<number>& b) {
+    assert(a.size() == b.size());
+
+    number sum = 0;
+    for (int i = 0; i < a.size(); i++)
+        sum += a[i] * b[i];
+    
+    return sum;
 }

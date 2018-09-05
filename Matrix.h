@@ -4,6 +4,7 @@
 #define AILABB_A1_matrix_H
 
 #include <vector>
+#include <string>
 #include "globals.h"
 
 using namespace std;
@@ -20,6 +21,7 @@ public:
     void fill(const vector<number>& v);
 
     string to_string() const;
+    vector<number> get_col(int j);
 
 private:
     int width, height;
@@ -28,5 +30,8 @@ private:
 
 ostream& operator<< (ostream& outs, const matrix& m);
 
+ostream& operator<< (ostream& outs, const vector<number>& v);
+
+number operator *(const vector<number>& a, const vector<number>& b);
 
 #endif //AILABB_A1_matrix_H
