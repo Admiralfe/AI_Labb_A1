@@ -26,7 +26,8 @@ public:
     string to_string() const;
     vector<number> get_col(int j);
 
-    static matrix parse_stdin();    
+    static matrix parse_stdin(); 
+    static vector<number> parse_vec_stdin();   
 
     void to_stdout();
 

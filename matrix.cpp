@@ -113,6 +113,33 @@ matrix matrix::parse_stdin() {
     return res;
 }
 
+//se ovan
+vector<number> matrix::parse_vec_stdin() {
+    //Will contain stdin split by whitespace.
+    vector<string> input;
+
+    string line;
+    getline(cin, line);
+
+    stringstream stream;
+    stream.str(line);
+
+    string s;
+
+    while (getline(stream, s, ' ')) {
+        input.push_back(s);
+    }
+
+    int length = stoi(input[0]);
+
+    vector<number> res = vector<number>(length);
+
+    for (int i = 1; i < input.size(); i++)
+        res.push_back(stod(input[i]));
+
+    return res;
+}
+
 string matrix::to_string() const {
     stringstream res;
 

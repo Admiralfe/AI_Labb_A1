@@ -3,6 +3,7 @@
 #include <vector>
 #include "matrix.h"
 #include "globals.h"
+#include "hmm.h"
 
 typedef vector<number> vec;
 typedef matrix mat;
@@ -42,16 +43,23 @@ int main() {
     return 0;
      */
 
-    matrix transition = matrix::parse_stdin();
-    matrix emission = matrix::parse_stdin();
-    matrix state = matrix::parse_stdin();
+    mat transition = matrix::parse_stdin();
+    mat emission = matrix::parse_stdin();
+    mat state = matrix::parse_stdin();
+    vec state_vec = vec(state.getWidth());
+    for (int i = 0; i < state.getWidth(); i++)
+        state_vec[i] = state.get(0, i);
 
-    state = state * transition;
+    vec observation_sequence = matrix::parse_vec_stdin();
+    vec normalization = vec(observation_sequence.size());
 
-    matrix observation_prob = state * emission;
+    vec alphat = hmm::a_pass(transition, emission, state_vec, observation_sequence, normalization);
 
-    observation_prob.to_stdout();
+    number sum = 0;
+    for (int i = 0; i < alphat.size(); i++)
+        sum += alphat[i];
+    sum /= normalization[normalization.size() - 1];
 
-    cout << endl;
+    cout << sum << endl;
     return 0;
 }
