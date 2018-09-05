@@ -25,6 +25,8 @@ public:
 
     static matrix parse_stdin();
 
+    void to_stdout();
+
 private:
     int width, height;
     vector<vector<number>> elements;

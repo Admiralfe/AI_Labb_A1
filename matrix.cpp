@@ -44,7 +44,7 @@ matrix matrix::operator*(const matrix& m) {
 
     matrix res(this->height, m.width);
 
-    int sum;
+    number sum;
 
     for (int col = 0; col < m.width; col++) {
         for (int row = 0; row < this->height; row++) {
@@ -133,6 +133,16 @@ vector<number> matrix::get_col(int j) {
         res[i] = elements[i][j];
 
     return res;
+}
+
+void matrix::to_stdout() {
+    cout << this->height << ' ' << this->width;
+
+    for (int row = 0; row < this->height; row++) {
+        for (int col = 0; col < this->width; col++) {
+            cout << ' ' << this->get(row, col);
+        }
+    }
 }
 
 ostream& operator<< (ostream& outs, const matrix& m) {

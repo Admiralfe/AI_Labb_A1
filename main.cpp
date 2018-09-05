@@ -42,7 +42,16 @@ int main() {
     return 0;
      */
 
-    matrix m = matrix::parse_stdin();
+    matrix transition = matrix::parse_stdin();
+    matrix emission = matrix::parse_stdin();
+    matrix state = matrix::parse_stdin();
 
-    cout << m;
+    state = state * transition;
+
+    matrix observation_prob = state * emission;
+
+    observation_prob.to_stdout();
+
+    cout << endl;
+    return 0;
 }
