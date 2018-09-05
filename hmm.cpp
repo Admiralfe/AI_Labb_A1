@@ -1,9 +1,12 @@
 #include <cassert>
+#include <iostream>
+
 #include "hmm.h"
 #include "globals.h"
 #include "matrix.h"
 
 using namespace globals;
+using namespace std;
 
 typedef matrix mat;
 typedef vector<number> vec;
@@ -45,6 +48,6 @@ vector<number> hmm::a_pass(const matrix& A, const matrix& B, const vector<number
         for (int i = 0; i < no_states; i++)
             alpha.set(i, t, alpha.get(i, t) * c[t]);
     }
-
+    
     return alpha.get_col(seq_length - 1);
 }

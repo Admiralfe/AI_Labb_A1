@@ -61,12 +61,12 @@ matrix matrix::operator*(const matrix& m) {
 }
 
 number matrix::get(int i, int j) const {
-    assert(0 >= i && i < height && j >= 0 && j < width);
+    assert(i >= 0 && i < height && j >= 0 && j < width);
     return this->elements[i][j];
 }
 
 void matrix::set(int i, int j, number element) {
-    assert(0 >= i && i < height && j >= 0 && j < width);
+    assert(i >= 0 && i < height && j >= 0 && j < width);
     this->elements[i][j] = element;
 }
 
@@ -134,8 +134,8 @@ vector<int> matrix::parse_intvec_stdin() {
 
     vector<int> res = vector<int>(length);
 
-    for (int i = 1; i < input.size(); i++)
-        res.push_back(stod(input[i]));
+    for (int i = 0; i < length; i++)
+        res[i] = stoi(input[i+1]);
 
     return res;
 }
@@ -179,6 +179,12 @@ ostream& operator<< (ostream& outs, const matrix& m) {
 ostream& operator<< (ostream& outs, const vector<number>& v) {
     for (int i = 0; i < v.size(); i++)
 	    outs << v[i] << endl;
+    return outs;
+}
+
+ostream& operator<< (ostream& outs, const vector<int>& v) {
+    for (int i = 0; i < v.size(); i++)
+        outs << v[i] << endl;
     return outs;
 }
 

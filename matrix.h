@@ -40,6 +40,8 @@ ostream& operator<< (ostream& outs, const matrix& m);
 
 ostream& operator<< (ostream& outs, const vector<number>& v);
 
+ostream& operator<< (ostream& outs, const vector<int>& v);
+
 number operator *(const vector<number>& a, const vector<number>& b);
 
 #endif //AILABB_A1_matrix_H
