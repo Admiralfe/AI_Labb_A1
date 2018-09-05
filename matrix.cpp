@@ -114,7 +114,7 @@ matrix matrix::parse_stdin() {
 }
 
 //se ovan
-vector<number> matrix::parse_vec_stdin() {
+vector<int> matrix::parse_intvec_stdin() {
     //Will contain stdin split by whitespace.
     vector<string> input;
 
@@ -132,7 +132,7 @@ vector<number> matrix::parse_vec_stdin() {
 
     int length = stoi(input[0]);
 
-    vector<number> res = vector<number>(length);
+    vector<int> res = vector<int>(length);
 
     for (int i = 1; i < input.size(); i++)
         res.push_back(stod(input[i]));

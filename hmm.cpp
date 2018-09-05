@@ -8,7 +8,7 @@ using namespace globals;
 typedef matrix mat;
 typedef vector<number> vec;
 
-vector<number> hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<number>& obs_seq, vector<number>& c) {
+vector<number> hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int>& obs_seq, vector<number>& c) {
     int no_states = A.getHeight();
     int seq_length = obs_seq.size();
     
@@ -30,8 +30,8 @@ vector<number> hmm::a_pass(const matrix& A, const matrix& B, const vector<number
     for (int i = 0; i < no_states; i++)
         alpha.set(i, 0, alpha.get(i, 0) * c[0]);
 
-    int sum;
-    int elem;
+    number sum;
+    number elem;
     for (int t = 1; t < seq_length; t++) {
         for (int i = 0; i < no_states; i++) {
             sum = 0;

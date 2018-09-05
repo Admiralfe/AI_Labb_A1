@@ -27,7 +27,7 @@ public:
     vector<number> get_col(int j);
 
     static matrix parse_stdin(); 
-    static vector<number> parse_vec_stdin();   
+    static vector<int> parse_intvec_stdin();   
 
     void to_stdout();
 

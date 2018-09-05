@@ -50,7 +50,7 @@ int main() {
     for (int i = 0; i < state.getWidth(); i++)
         state_vec[i] = state.get(0, i);
 
-    vec observation_sequence = matrix::parse_vec_stdin();
+    vector<int> observation_sequence = matrix::parse_intvec_stdin();
     vec normalization = vec(observation_sequence.size());
 
     vec alphat = hmm::a_pass(transition, emission, state_vec, observation_sequence, normalization);
