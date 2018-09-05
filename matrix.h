@@ -23,6 +23,8 @@ public:
     string to_string() const;
     vector<number> get_col(int j);
 
+    static matrix parse_stdin();
+
 private:
     int width, height;
     vector<vector<number>> elements;

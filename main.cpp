@@ -8,6 +8,7 @@ typedef vector<number> vec;
 typedef matrix mat;
 
 int main() {
+    /*
     mat A(3, 2);
     A.fill({
         1, 2,
@@ -39,4 +40,9 @@ int main() {
     cout << A.get_col(1);
 
     return 0;
+     */
+
+    matrix m = matrix::parse_stdin();
+
+    cout << m;
 }
