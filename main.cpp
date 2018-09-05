@@ -21,10 +21,11 @@ int main() {
 
     vec normalization = vec(observation_sequence.size());
 
-    mat alpha = hmm::a_pass(transition, emission, state_vec, observation_sequence, normalization);;
+    //mat alpha = hmm::a_pass(transition, emission, state_vec, observation_sequence, normalization);;
 
-    vector<int> most_likely_states = hmm::b_pass(transition, emission, state_vec, observation_sequence, normalization, alpha);
+    //vector<int> most_likely_states = hmm::b_pass(transition, emission, state_vec, observation_sequence, normalization, alpha);
 
+    vector<int> most_likely_states = hmm::viterbi(transition, emission, state_vec, observation_sequence);
     for (int i = 0; i < most_likely_states.size(); i++)
         cout << most_likely_states[i] << " ";
         

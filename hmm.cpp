@@ -1,7 +1,6 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
-#include <cmath>
 
 #include "hmm.h"
 #include "globals.h"
@@ -122,19 +121,17 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
         log_delta.set(i, 0, entry);
     }
 
+    for (int t = 1; t < seq_length; t++) {
+        for (int i = 0; i < no_states; i++) {
 
-    int index_max;
-    //Loops over states
-    for (int i = 0; i < no_states; i++) {
-        //Loops over time steps
-        for (int t = 1; t < seq_length; t++) {
+            int index_max = 0;
 
             //Initialize the value of max for j = 0.
-            number max = log_delta.get(t - 1, 0) + log(A.get(0, i)) + log(B.get(i, obs_seq[0]));
+            number max = log_delta.get(0, t - 1) + log(A.get(0, i));
 
             //Find the max_{j} of all new deltas by iterating over j.
             for (int j = 1; j < no_states; j++) {
-                number new_max = log_delta.get(t - 1, j) + log(A.get(j, i)) + log(B.get(i, obs_seq[j]));
+                number new_max = log_delta.get(j, t - 1) + log(A.get(j, i));
 
                 if (new_max > max) {
                     max = new_max;
@@ -142,20 +139,27 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
                 }
             }
 
-            log_delta.set(i, t, max);
+            log_delta.set(i, t, max  + log(B.get(i, obs_seq[t])));
             delta_index[i][t] = index_max;
         }
     }
 
     vector<int> res = vector<int>(seq_length);
 
-    //index_max should still have the relevant max value of the last time step since the for loop finished.
-    int max_state_index = index_max;
-    res[res.size() - 1] = max_state_index;
+    number T_max = log_delta.get(0, log_delta.getWidth() - 1);
+    int T_max_index;
+    for (int j = 1; j < no_states; j++) {
+        number new_max = log_delta.get(j, log_delta.getWidth() - 1);
+        if (new_max > T_max) {
+            T_max_index = j;
+            T_max = new_max;
+        }
+    }
+
+    res[res.size() - 1] = T_max_index;
 
     for (int t = res.size() - 2; t >= 0; t--) {
-        res[t] = delta_index[max_state_index][t];
-        max_state_index = delta_index[max_state_index][t];
+        res[t] = delta_index[res[t + 1]][t + 1];
     }
 
     return res;
