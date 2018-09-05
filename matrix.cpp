@@ -78,6 +78,9 @@ void matrix::fill(const vector<number>& v) {
             this->elements[i][j] = v[offset + j];
 }
 
+//Parses a matrix given on standard input in the format:
+//[number_of_rows number_of_columns entries] separated by spaces.
+// Each line on standard input corresponds to a new matrix.
 matrix matrix::parse_stdin() {
     //Will contain stdin split by whitespace.
     vector<string> input;
@@ -90,9 +93,6 @@ matrix matrix::parse_stdin() {
     stream.str(line);
 
     string s;
-
-    cout << s[s.size() - 1];
-
 
     while (getline(stream, s, ' ')) {
         input.push_back(s);
