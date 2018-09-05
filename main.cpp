@@ -3,6 +3,7 @@
 #include <vector>
 #include "matrix.h"
 #include "globals.h"
+#include "hmm.h"
 
 typedef vector<number> vec;
 typedef matrix mat;
@@ -42,7 +43,7 @@ int main() {
     return 0;
      */
 
-    matrix m = matrix::parse_stdin();
+    //matrix m = matrix::parse_stdin();
 
-    cout << m;
+    //cout << m;
 }

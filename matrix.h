@@ -16,14 +16,17 @@ public:
     matrix operator *(const matrix& m);
     
     matrix(int height, int width);
-    number get(int i, int j);
+    number get(int i, int j) const;
     void set(int i, int j, number element);
     void fill(const vector<number>& v);
+
+    int getHeight() const { return height; }
+    int getWidth() const { return width; }
 
     string to_string() const;
     vector<number> get_col(int j);
 
-    static matrix parse_stdin();
+    static matrix parse_stdin();    
 
 private:
     int width, height;

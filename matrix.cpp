@@ -60,7 +60,7 @@ matrix matrix::operator*(const matrix& m) {
     return res;
 }
 
-number matrix::get(int i, int j) {
+number matrix::get(int i, int j) const {
     assert(0 >= i && i < height && j >= 0 && j < width);
     return this->elements[i][j];
 }
