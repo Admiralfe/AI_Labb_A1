@@ -25,7 +25,9 @@ int main() {
 
     vector<int> most_likely_states = hmm::b_pass(transition, emission, state_vec, observation_sequence, normalization, alpha);
 
-    cout << most_likely_states << endl;
-
+    for (int i = 0; i < most_likely_states.size(); i++)
+        cout << most_likely_states[i] << " ";
+        
+    cout << endl;
     return 0;
 }
