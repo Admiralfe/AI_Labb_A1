@@ -8,6 +8,7 @@ typedef vector<number> vec;
 typedef matrix mat;
 
 int main() {
+    /*
     mat A(3, 2);
     A.fill({
         1, 2,
@@ -35,4 +36,9 @@ int main() {
     for (int i = 0; i < y.size(); i++)
         std::cout << y[i] << std::endl;
     return 0;
+     */
+
+    matrix m = matrix::parse_stdin();
+
+    cout << m;
 }

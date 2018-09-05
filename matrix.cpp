@@ -1,6 +1,8 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <vector>
+#include <string>
 
 #include "matrix.h"
 #include "globals.h"
@@ -73,7 +75,42 @@ void matrix::fill(const vector<number>& v) {
 
     for (int i = 0; i < height; i++)
         for (int j = 0, offset = i * width; j < width; j++)
-            elements[i][j] = v[offset + j];
+            this->elements[i][j] = v[offset + j];
+}
+
+matrix matrix::parse_stdin() {
+    //Will contain stdin split by whitespace.
+    vector<string> input;
+    vector<number> number_vec;
+
+    string line;
+    getline(cin, line);
+
+    stringstream stream;
+    stream.str(line);
+
+    string s;
+
+    cout << s[s.size() - 1];
+
+
+    while (getline(stream, s, ' ')) {
+        input.push_back(s);
+    }
+
+
+    int height = stoi(input[0]);
+    int width = stoi(input[1]);
+
+    matrix res = matrix(height, width);
+
+    for (int i = 2; i < input.size(); i++) {
+        number_vec.push_back(stod(input[i]));
+    }
+
+    res.fill(number_vec);
+
+    return res;
 }
 
 string matrix::to_string() const {

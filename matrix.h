@@ -21,6 +21,8 @@ public:
 
     string to_string() const;
 
+    static matrix parse_stdin();
+
 private:
     int width, height;
     vector<vector<number>> elements;
