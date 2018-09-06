@@ -147,6 +147,7 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
 
     vector<int> res = vector<int>(seq_length);
 
+    //Copmute the argmax of log_deltas last column.
     number T_max = log_delta.get(0, log_delta.getWidth() - 1);
     int T_max_index;
     for (int j = 1; j < no_states; j++) {
