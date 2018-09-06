@@ -180,12 +180,12 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>&
     assert(beta.getWidth() == seq_length);
 
     matrix gamma = matrix(no_states, seq_length); //indexed gamma.get(i, t)
-    vector<matrix> digamma = vector<matrix>(seq_length); //indexed digamma[t].get(i, j)
+    vector<matrix*> digamma = vector<matrix*>(seq_length); //indexed digamma[t].get(i, j)
     number denom;
 
     for (int t = 0; t < seq_length - 1; t++) {
         denom = 0;
-        digamma[t] = matrix(no_states, no_states);
+        digamma[t] = new matrix(no_states, no_states);
 
         for (int i = 0; i < no_states; i++)
             for (int j = 0; j < no_states; j++)
@@ -193,8 +193,8 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>&
         
         for (int i = 0; i < no_states; i++) {
             for (int j = 0; j < no_states; j++) {
-                digamma[t].set(i, j, alpha.get(i, t) * A.get(i, j) * B.get(j, obs_seq[t + 1]) * beta.get(j, t + 1) / denom);
-                gamma.set(i, t, gamma.get(i, t) + digamma[t].get(i, j));
+                digamma[t]->set(i, j, alpha.get(i, t) * A.get(i, j) * B.get(j, obs_seq[t + 1]) * beta.get(j, t + 1) / denom);
+                gamma.set(i, t, gamma.get(i, t) + digamma[t]->get(i, j));
             }
         }
     }
@@ -218,7 +218,7 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>&
             denom = 0;
 
             for (int t = 0; t < seq_length - 1; t++) {
-                numer += digamma[t].get(i, j);
+                numer += digamma[t]->get(i, j);
                 denom += gamma.get(i, t);
             }
 
@@ -238,5 +238,10 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>&
             }
             B.set(i, j, numer / denom);
         }
+    }
+
+    for (int t = 0; t < seq_length; t++) {
+        delete digamma[t];
+        digamma[t] = nullptr;
     }
 }
