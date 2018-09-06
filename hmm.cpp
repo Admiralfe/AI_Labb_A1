@@ -54,7 +54,7 @@ matrix hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
 }
 
 //förutsätter att en alpha-pass redan gjorts och att värdena i c inte har ändrats
-vector<int> hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int>& obs_seq, const vector<number>& c, const matrix& alpha) {
+matrix hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int>& obs_seq, const vector<number>& c, const matrix& alpha) {
     int no_states = A.getHeight();
     int seq_length = obs_seq.size();
 
@@ -81,6 +81,7 @@ vector<int> hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& 
         }
     }
 
+    /*
     int current_max;
     int current;
 
@@ -95,9 +96,9 @@ vector<int> hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& 
                 res[t] = i;
             }
         }
-    }
+    }*/
 
-    return res;
+    return beta;
 }
 
 vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_seq) {
