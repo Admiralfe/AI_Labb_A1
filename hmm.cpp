@@ -165,3 +165,78 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
 
     return res;
 }
+
+void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>& obs_seq, const matrix& alpha, const matrix& beta) {
+    int no_states = A.getHeight();
+    int seq_length = obs_seq.size();
+
+    assert(A.getWidth() == no_states);
+    assert(B.getHeight() == no_states);
+    assert(pi.size() == no_states);
+    assert(seq_length > 0);
+    assert(alpha.getHeight() == no_states);
+    assert(alpha.getWidth() == seq_length);
+    assert(beta.getHeight() == no_states);
+    assert(beta.getWidth() == seq_length);
+
+    matrix gamma = matrix(no_states, seq_length); //indexed gamma.get(i, t)
+    vector<matrix> digamma = vector<matrix>(seq_length); //indexed digamma[t].get(i, j)
+    number denom;
+
+    for (int t = 0; t < seq_length - 1; t++) {
+        denom = 0;
+        digamma[t] = matrix(no_states, no_states);
+
+        for (int i = 0; i < no_states; i++)
+            for (int j = 0; j < no_states; j++)
+                denom += alpha.get(i, t) * A.get(i, j) * B.get(j, obs_seq[t + 1]) * beta.get(j, t + 1);
+        
+        for (int i = 0; i < no_states; i++) {
+            for (int j = 0; j < no_states; j++) {
+                digamma[t].set(i, j, alpha.get(i, t) * A.get(i, j) * B.get(j, obs_seq[t + 1]) * beta.get(j, t + 1) / denom);
+                gamma.set(i, t, gamma.get(i, t) + digamma[t].get(i, j));
+            }
+        }
+    }
+
+    denom = 0;
+    for (int i = 0; i < no_states; i++)
+        denom += alpha.get(i, seq_length - 1);
+
+    for (int i = 0; i < no_states; i++)
+        gamma.set(i, seq_length - 1, alpha.get(i, seq_length - 1) / denom);
+    
+    //re-estimate A, B and pi
+
+    for (int i = 0; i < no_states; i++)
+        pi[i] = gamma.get(i, 0);
+    
+    int numer;
+    for (int i = 0; i < no_states; i++) {
+        for (int j = 0; j < no_states; j++) {
+            numer = 0;
+            denom = 0;
+
+            for (int t = 0; t < seq_length - 1; t++) {
+                numer += digamma[t].get(i, j);
+                denom += gamma.get(i, t);
+            }
+
+            A.set(i, j, numer / denom);
+        }
+    }
+
+    for (int i = 0; i < no_states; i++) {
+        for (int j = 0; j < B.getWidth(); j++) {
+            numer = 0;
+            denom = 0;
+
+            for (int t = 0; t < seq_length; t++) {
+                if (obs_seq[j] == j)
+                    numer += gamma.get(i, t);
+                denom += gamma.get(i, t);
+            }
+            B.set(i, j, numer / denom);
+        }
+    }
+}
