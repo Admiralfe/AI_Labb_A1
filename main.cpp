@@ -9,6 +9,10 @@ typedef vector<number> vec;
 typedef matrix mat;
 
 int main() {
+    cout << "oh look it compiled";
+    cout.flush();
+
+
     mat transition = matrix::parse_stdin();
     mat emission = matrix::parse_stdin();
     mat state = matrix::parse_stdin();
