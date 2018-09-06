@@ -1,10 +1,13 @@
 #include <cassert>
 #include <cmath>
 #include <iostream>
+#include <limits>
 
 #include "hmm.h"
 #include "globals.h"
 #include "matrix.h"
+
+#define MAX_ITERS 1000
 
 using namespace globals;
 using namespace std;
@@ -165,4 +168,32 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
     }
 
     return res;
+}
+
+void hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> obs_seq) {
+    vector<number> c = vector<number>(obs_seq.size());
+    int iters = 0;
+    int maxiters = MAX_ITERS;
+
+    number old_log_prob = -std::numeric_limits<double>::infinity();
+
+    while (iters < maxiters) {
+        number log_prob = 0;
+
+        for (int i = 0; i < obs_seq.size() - 1; i++) {
+            log_prob += log(c[i]);
+        }
+
+        log_prob = -log_prob;
+
+        if (old_log_prob < log_prob) {
+            matrix alpha = hmm::a_pass(A, B, pi, obs_seq, c);
+            matrix beta = hmm::b_pass(A, B, pi, obs_seq, c, alpha);
+            hmm::reestimate(A, B, pi, obs_seq, alpha, beta);
+
+            old_log_prob = log_prob;
+        } else {
+            return;
+        }
+    }
 }
