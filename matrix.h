@@ -31,6 +31,8 @@ public:
 
     void to_stdout();
 
+    bool row_stochastic() const;
+
 private:
     int width, height;
     vector<vector<number>> elements;

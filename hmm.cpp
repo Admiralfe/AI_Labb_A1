@@ -7,7 +7,8 @@
 #include "globals.h"
 #include "matrix.h"
 
-#define MAX_ITERS 1000
+#define MAX_ITERS 50
+#define EPSILON 0.00001
 
 using namespace globals;
 using namespace std;
@@ -24,6 +25,10 @@ matrix hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
     assert(pi.size() == no_states);
     assert(seq_length > 0);
     assert(c.size() == seq_length);
+    assert(A.row_stochastic());
+    assert(B.row_stochastic());
+
+    c = vector<number>(seq_length);
 
     mat alpha = mat(no_states, seq_length);
 
@@ -68,6 +73,8 @@ matrix hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
     assert(c.size() == seq_length);
     assert(alpha.getHeight() == no_states);
     assert(alpha.getWidth() == seq_length);
+    assert(A.row_stochastic());
+    assert(B.row_stochastic());
 
     mat beta = mat(no_states, seq_length);
 
@@ -177,28 +184,38 @@ void hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> o
 
     number old_log_prob = -std::numeric_limits<double>::infinity();
 
+    matrix alpha = hmm::a_pass(A, B, pi, obs_seq, c);
+    matrix beta = hmm::b_pass(A, B, pi, obs_seq, c, alpha);
+    hmm::reestimate(A, B, pi, obs_seq, alpha, beta);
+
     while (iters < maxiters) {
+        iters++;
         number log_prob = 0;
 
-        for (int i = 0; i < obs_seq.size() - 1; i++) {
+        for (int i = 0; i < obs_seq.size(); i++) {
             log_prob += log(c[i]);
         }
 
         log_prob = -log_prob;
 
-        if (old_log_prob < log_prob) {
-            matrix alpha = hmm::a_pass(A, B, pi, obs_seq, c);
-            matrix beta = hmm::b_pass(A, B, pi, obs_seq, c, alpha);
-            hmm::reestimate(A, B, pi, obs_seq, alpha, beta);
-
+        if (log_prob > old_log_prob) {
             old_log_prob = log_prob;
+
+            alpha = hmm::a_pass(A, B, pi, obs_seq, c);
+            beta = hmm::b_pass(A, B, pi, obs_seq, c, alpha);
+            hmm::reestimate(A, B, pi, obs_seq, alpha, beta);
         } else {
             return;
         }
     }
 }
 
-void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>& obs_seq, const matrix& alpha, const matrix& beta) {
+//Comparison if two float values are within EPSILON of each other.
+bool number_equal(number a, number b) {
+    return ((a - b) < EPSILON) && ((b - a) < EPSILON);
+}
+
+void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>& obs_seq, const matrix& alpha, const matrix& beta) {
     int no_states = A.getHeight();
     int seq_length = obs_seq.size();
 
@@ -210,6 +227,8 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>&
     assert(alpha.getWidth() == seq_length);
     assert(beta.getHeight() == no_states);
     assert(beta.getWidth() == seq_length);
+    assert(A.row_stochastic());
+    assert(B.row_stochastic());
 
     matrix gamma = matrix(no_states, seq_length); //indexed gamma.get(i, t)
     vector<matrix*> digamma = vector<matrix*>(seq_length); //indexed digamma[t].get(i, j)
@@ -240,10 +259,12 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>&
 
     //re-estimate A, B and pi
 
+    //pi
     for (int i = 0; i < no_states; i++)
         pi[i] = gamma.get(i, 0);
 
-    int numer;
+    //A
+    number numer;
     for (int i = 0; i < no_states; i++) {
         for (int j = 0; j < no_states; j++) {
             numer = 0;
@@ -258,13 +279,14 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number> pi, const vector<int>&
         }
     }
 
+    //B
     for (int i = 0; i < no_states; i++) {
         for (int j = 0; j < B.getWidth(); j++) {
             numer = 0;
             denom = 0;
 
             for (int t = 0; t < seq_length; t++) {
-                if (obs_seq[j] == j)
+                if (obs_seq[t] == j)
                     numer += gamma.get(i, t);
                 denom += gamma.get(i, t);
             }

@@ -4,8 +4,9 @@
 #include <vector>
 #include <string>
 
-#include "matrix.h"
+    #include "matrix.h"
 #include "globals.h"
+#include "hmm.h"
 
 using namespace globals;
 
@@ -58,6 +59,21 @@ matrix matrix::operator*(const matrix& m) {
     }
 
     return res;
+}
+
+bool matrix::row_stochastic() const {
+    for (int i = 0; i < this->height; i++) {
+        number row_sum = 0;
+
+        for (int j = 0; j < this->width; j++) {
+            row_sum += this->get(i, j);
+        }
+
+        if (!number_equal(row_sum, 1))
+            return false;
+    }
+
+    return true;
 }
 
 number matrix::get(int i, int j) const {
