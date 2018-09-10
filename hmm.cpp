@@ -7,9 +7,6 @@
 #include "globals.h"
 #include "matrix.h"
 
-#define MAX_ITERS 50
-#define EPSILON 0.00001
-
 using namespace globals;
 using namespace std;
 
@@ -212,7 +209,7 @@ void hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> o
 
 //Comparison if two float values are within EPSILON of each other.
 bool number_equal(number a, number b) {
-    return ((a - b) < EPSILON) && ((b - a) < EPSILON);
+    return abs(a - b) < EPSILON;
 }
 
 void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>& obs_seq, const matrix& alpha, const matrix& beta) {

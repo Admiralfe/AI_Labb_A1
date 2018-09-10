@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-    #include "matrix.h"
+#include "matrix.h"
 #include "globals.h"
 #include "hmm.h"
 
