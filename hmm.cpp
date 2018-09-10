@@ -13,6 +13,9 @@ using namespace std;
 typedef matrix mat;
 typedef vector<number> vec;
 
+//gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
+//förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
+//c kommer att populeras med normeringskonstanter
 matrix hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int>& obs_seq, vector<number>& c) {
     int no_states = A.getHeight();
     int seq_length = obs_seq.size();
@@ -174,10 +177,10 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
     return res;
 }
 
-void hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> obs_seq) {
+int hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> obs_seq, bool verbose, int max_iter) {
     vector<number> c = vector<number>(obs_seq.size());
     int iters = 0;
-    int maxiters = MAX_ITERS;
+    int maxiters = max_iter;
 
     number old_log_prob = -std::numeric_limits<double>::infinity();
 
@@ -194,17 +197,25 @@ void hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> o
         }
 
         log_prob = -log_prob;
+        
+        if (verbose && ((iters & 15) == 15)) {
+            cout << iters << ":\t" << log_prob << endl;
+            if ((iters & 255) == 255)
+                cout.flush();
+        }
 
-        if (log_prob > old_log_prob) {
+        if (log_prob > old_log_prob && !number_equal(log_prob, old_log_prob)) {
             old_log_prob = log_prob;
 
             alpha = hmm::a_pass(A, B, pi, obs_seq, c);
             beta = hmm::b_pass(A, B, pi, obs_seq, c, alpha);
             hmm::reestimate(A, B, pi, obs_seq, alpha, beta);
         } else {
-            return;
+            return iters;
         }
     }
+
+    return -1;
 }
 
 //Comparison if two float values are within EPSILON of each other.
@@ -212,6 +223,8 @@ bool number_equal(number a, number b) {
     return abs(a - b) < EPSILON;
 }
 
+//räknar ut ny modell (A, B, pi) utifrån datan från en alpha- och en beta-pass
+//A, B och pi kommer att skrivas över
 void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>& obs_seq, const matrix& alpha, const matrix& beta) {
     int no_states = A.getHeight();
     int seq_length = obs_seq.size();
