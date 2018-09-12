@@ -14,6 +14,9 @@ class matrix {
 public:
     vector<number> operator *(const vector<number>& v);
     matrix operator *(const matrix& m);
+    matrix operator *(number x);
+    matrix operator +(const matrix& m);
+    matrix operator -(const matrix& m);
     
     matrix(int height, int width);
     number get(int i, int j) const;
@@ -24,14 +27,14 @@ public:
     int getWidth() const { return width; }
 
     string to_string() const;
-    vector<number> get_col(int j);
-    vector<number> get_row(int i);
+    vector<number> get_col(int j) const;
+    vector<number> get_row(int i) const;
 
     static matrix parse_stdin(); 
     static vector<int> parse_intvec_stdin();
     static matrix random_uniform(int h, int w, double variance);
 
-    void to_stdout();
+    void to_stdout() const;
 
     bool row_stochastic() const;
     number distance(const matrix& other, int norm = 2) const;
