@@ -27,7 +27,8 @@ public:
     vector<number> get_col(int j);
 
     static matrix parse_stdin(); 
-    static vector<int> parse_intvec_stdin();   
+    static vector<int> parse_intvec_stdin();
+    static matrix random_uniform(int h, int w, double variance);
 
     void to_stdout();
 

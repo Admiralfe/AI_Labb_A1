@@ -3,6 +3,7 @@
 #include <sstream>
 #include <vector>
 #include <string>
+#include <random>
 
 #include "matrix.h"
 #include "globals.h"
@@ -92,6 +93,32 @@ void matrix::fill(const vector<number>& v) {
     for (int i = 0; i < height; i++)
         for (int j = 0, offset = i * width; j < width; j++)
             this->elements[i][j] = v[offset + j];
+}
+
+matrix matrix::random_uniform(int h, int w, double variance) {
+    matrix res = matrix(h, w);
+
+    default_random_engine generator;
+    uniform_real_distribution<double> distribution(0, variance);
+
+    double uniform_value = 1 / (double) w;
+
+    for (int i = 0; i < h; i++) {
+        double current_row_sum = 0;
+        for (int j = 0; j < w; j++) {
+            //We set the last element in each row so that the matrix becomes row stochastic,
+            //that is each row must sum to 1.
+            if (j == (w - 1))
+                res.set(i, j, 1 - current_row_sum);
+            else {
+                double entry = uniform_value + distribution(generator);
+                current_row_sum += entry;
+                res.set(i, j, entry);
+            }
+        }
+    }
+
+    return res;
 }
 
 //Parses a matrix given on standard input in the format:

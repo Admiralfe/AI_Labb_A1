@@ -63,8 +63,15 @@ void mainDE() {
     cout << endl;
 }
 
+void mainTest() {
+    matrix matrix = matrix::random_uniform(5, 10, 0.01);
+
+    cout << matrix << endl;
+}
+
 int main() {
     //mainDE();
-    mainC();
+    //mainC();
+    mainTest();
     return 0;
 }
