@@ -211,6 +211,15 @@ vector<number> matrix::get_col(int j) {
     return res;
 }
 
+vector<number> matrix::get_row(int i) {
+    vector<number> res = vector<number>(width);
+
+    for (int j = 0; j < height; j++)
+        res[j] = elements[i][j];
+
+    return res;
+}
+
 void matrix::to_stdout() {
     cout << this->height << ' ' << this->width;
 
