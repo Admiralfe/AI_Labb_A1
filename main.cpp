@@ -64,7 +64,7 @@ void mainDE() {
 }
 
 void mainTest() {
-    matrix matrix = matrix::random_uniform(5, 10, 0.01);
+    matrix matrix = matrix::random_uniform(3, 3, 0.01);
 
     cout << matrix << endl;
 }
