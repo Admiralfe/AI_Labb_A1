@@ -33,6 +33,7 @@ public:
     void to_stdout();
 
     bool row_stochastic() const;
+    number distance(const matrix& other, int norm = 2) const;
 
 private:
     int width, height;

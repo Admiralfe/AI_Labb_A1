@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -213,6 +214,40 @@ void matrix::to_stdout() {
             cout << ' ' << this->get(row, col);
         }
     }
+}
+
+//use -1 for infinity norm
+number matrix::distance(const matrix& other, int norm) const {
+    assert(this->height == other.height);
+    assert(this->width == other.width);
+
+    number res = 0;
+    switch(norm) {
+        case 1:
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++)
+                    res += abs(elements[i][j] - other.elements[i][j]);
+            break;
+        
+        case 2:
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++)
+                    res += pow(elements[i][j] - other.elements[i][j], 2);
+
+            res = sqrt(res);
+            break;
+
+        case -1: //infinity
+            for (int i = 0; i < height; i++)
+                for (int j = 0; j < width; j++)
+                    res = max(res, abs(elements[i][j] - other.elements[i][j]));
+            break;
+
+        default:
+            throw new invalid_argument("norm");
+    }
+
+    return res;
 }
 
 ostream& operator<< (ostream& outs, const matrix& m) {
