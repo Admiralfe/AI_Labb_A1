@@ -71,7 +71,7 @@ void mainTest() {
 
 int main() {
     //mainDE();
-    //mainC();
-    mainTest();
+    mainC();
+    //mainTest();
     return 0;
 }

@@ -99,7 +99,7 @@ void matrix::fill(const vector<number>& v) {
 
 matrix matrix::random_uniform(int h, int w, double variance) {
     matrix res = matrix(h, w);
-    
+
     long seed = std::chrono::system_clock::now().time_since_epoch().count();
 
     default_random_engine generator(seed);

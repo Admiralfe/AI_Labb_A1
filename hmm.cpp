@@ -204,7 +204,7 @@ int hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> ob
                 cout.flush();
         }
 
-        if (log_prob > old_log_prob && !number_equal(log_prob, old_log_prob)) {
+        if (log_prob - old_log_prob > PROB_EPSILON) {
             old_log_prob = log_prob;
 
             alpha = hmm::a_pass(A, B, pi, obs_seq, c);
