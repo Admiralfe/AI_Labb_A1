@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <random>
+#include <iomanip>
 #include <chrono>
 
 #include "matrix.h"
@@ -189,6 +190,7 @@ vector<int> matrix::parse_intvec_stdin() {
 
 string matrix::to_string() const {
     stringstream res;
+    res << setprecision(FLOAT_PRECISION);
 
     for (int row = 0; row < height; row++) {
         for (int col = 0; col < width; col++) {
