@@ -14,6 +14,9 @@ class matrix {
 public:
     vector<number> operator *(const vector<number>& v);
     matrix operator *(const matrix& m);
+    matrix operator *(number x);
+    matrix operator +(const matrix& m);
+    matrix operator -(const matrix& m);
     
     matrix(int height, int width);
     number get(int i, int j) const;

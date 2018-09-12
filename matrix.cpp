@@ -65,6 +65,38 @@ matrix matrix::operator*(const matrix& m) {
     return res;
 }
 
+matrix matrix::operator *(number x) {
+    matrix res(height, width);
+    for (int i = 0; i < height; i++)
+        for (int j = 0; j < width; j++)
+            res.elements[i][j] = this->elements[i][j] * x;
+    
+    return res;
+}
+matrix matrix::operator +(const matrix& m) {
+    assert(m.height == this->height);
+    assert(m.width == this->width);
+
+    matrix res(height, width);
+    for (int i = 0; i < height; i++)
+        for (int j = 0; j < width; j++)
+            res.elements[i][j] = this->elements[i][j] + m.elements[i][j];
+    
+    return res;
+}
+matrix matrix::operator -(const matrix& m) {
+    assert(m.height == this->height);
+    assert(m.width == this->width);
+
+    matrix res(height, width);
+    for (int i = 0; i < height; i++)
+        for (int j = 0; j < width; j++)
+            res.elements[i][j] = this->elements[i][j] - m.elements[i][j];
+    
+    return res;
+}
+
+
 bool matrix::row_stochastic() const {
     for (int i = 0; i < this->height; i++) {
         number row_sum = 0;
