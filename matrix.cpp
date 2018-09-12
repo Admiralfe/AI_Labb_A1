@@ -190,7 +190,7 @@ vector<int> matrix::parse_intvec_stdin() {
 
 string matrix::to_string() const {
     stringstream res;
-    res << setprecision(FLOAT_PRECISION);
+    res << fixed << setprecision(FLOAT_PRECISION);
 
     for (int row = 0; row < height; row++) {
         for (int col = 0; col < width; col++) {
@@ -202,7 +202,7 @@ string matrix::to_string() const {
     return res.str();
 }
 
-vector<number> matrix::get_col(int j) {
+vector<number> matrix::get_col(int j) const {
     vector<number> res = vector<number>(height);
 
     for (int i = 0; i < height; i++)
@@ -211,7 +211,7 @@ vector<number> matrix::get_col(int j) {
     return res;
 }
 
-vector<number> matrix::get_row(int i) {
+vector<number> matrix::get_row(int i) const {
     vector<number> res = vector<number>(width);
 
     for (int j = 0; j < height; j++)
@@ -220,7 +220,7 @@ vector<number> matrix::get_row(int i) {
     return res;
 }
 
-void matrix::to_stdout() {
+void matrix::to_stdout() const {
     cout << this->height << ' ' << this->width;
 
     for (int row = 0; row < this->height; row++) {
