@@ -28,12 +28,29 @@ void mainC() {
         0.19, 0.21, 0.15, 0.45
     });
 
-   */
+    vec pi = {0.3, 0.2, 0.5};
+    */
 
-    mat A = matrix::random_uniform(3, 3, 0.1);
-    mat B = matrix::random_uniform(3, 4, 0.1);
+    mat Actual = mat(3, 3);
+    Actual.fill({
+                   0.7, 0.05, 0.25,
+                   0.1, 0.8, 0.1,
+                   0.2, 0.3, 0.5
+           });
 
-    vec pi = matrix::random_uniform(3, 1, 0.1).get_col(0);
+    mat Bctual = mat(3, 4);
+    Bctual.fill({
+                   0.7, 0.2, 0.1, 0,
+                   0.1, 0.4, 0.3, 0.2,
+                   0, 0.1, 0.2, 0.7
+           });
+
+
+    mat A = matrix::random_uniform(3, 3, 0.2);
+    mat B = matrix::random_uniform(3, 4, 0.2);
+
+    vec pi = matrix::random_uniform(1, 3, 0.2).get_row(0);
+
 
     int iterations = hmm::model_estimate(A, B, pi, obs_seq, true, 5000);
 
@@ -45,6 +62,11 @@ void mainC() {
         cout << "Converged after " << iterations << " iterations" << endl;
     else
         cout << "Did not converge" << endl;
+
+    cout << A.distance(Actual) << endl;
+    cout << B.distance(Bctual) << endl;
+
+
 }
 
 void mainDE() {
