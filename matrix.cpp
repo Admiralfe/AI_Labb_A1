@@ -6,6 +6,7 @@
 #include <string>
 #include <random>
 #include <iomanip>
+#include <chrono>
 
 #include "matrix.h"
 #include "globals.h"
@@ -99,9 +100,11 @@ void matrix::fill(const vector<number>& v) {
 
 matrix matrix::random_uniform(int h, int w, double variance) {
     matrix res = matrix(h, w);
+    
+    long seed = std::chrono::system_clock::now().time_since_epoch().count();
 
-    default_random_engine generator;
-    uniform_real_distribution<double> distribution(0, variance);
+    default_random_engine generator(seed);
+    uniform_real_distribution<double> distribution(-variance, variance);
 
     double uniform_value = 1 / (double) w;
 
