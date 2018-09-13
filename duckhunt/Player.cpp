@@ -2,9 +2,9 @@
 #include <iostream>
 
 #include "Player.hpp"
-//#include "matrix.h"
-//#include "hmm.h"
-//#include "globals.h"
+#include "matrix.h"
+#include "hmm.h"
+#include "globals.h"
 
 namespace ducks
 {
@@ -20,6 +20,11 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
      * Here you should write your clever algorithms to get the best action.
      * This skeleton never shoots.
      */
+    
+    cerr << "Round\t" << pState.getRound()
+        << "\tBirds\t" << pState.getNumBirds()
+        << "\tMove\t" << pState.getBird(0).getLastObservation()
+        << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
 
     // This line choose not to shoot
     return cDontShoot;
@@ -36,6 +41,9 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
      */
 
     std::vector<ESpecies> lGuesses(pState.getNumBirds(), SPECIES_UNKNOWN);
+
+    cerr << "Guessing time!" << endl << flush;
+
     return lGuesses;
 }
 
