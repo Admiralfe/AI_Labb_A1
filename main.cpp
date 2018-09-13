@@ -105,7 +105,7 @@ void mainTest() {
     cout << matrix << endl;
 }
 
-int main() {
+int old_main() {
     //mainDE();
     mainC();
     //mainTest();

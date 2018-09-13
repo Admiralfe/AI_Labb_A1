@@ -1,4 +1,7 @@
 #include "Player.hpp"
+#include "matrix.h"
+#include "hmm.h"
+#include "globals.h"
 #include <cstdlib>
 #include <iostream>
 
