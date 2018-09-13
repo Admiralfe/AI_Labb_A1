@@ -57,7 +57,7 @@ matrix hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
         for (int i = 0; i < no_states; i++)
             alpha.set(i, t, alpha.get(i, t) * c[t]);
     }
-    
+
     return alpha;
 }
 

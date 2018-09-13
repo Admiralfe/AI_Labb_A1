@@ -102,6 +102,8 @@ bool matrix::row_stochastic() const {
         number row_sum = 0;
 
         for (int j = 0; j < this->width; j++) {
+            if (this->get(i, j) < 0)
+                return false;
             row_sum += this->get(i, j);
         }
 

@@ -12,7 +12,7 @@ typedef matrix mat;
 
 void mainC() {
     vector<int> obs_seq = matrix::parse_intvec_stdin();
-
+    /*
     mat A = mat(3, 3);
     A.fill({
         0.69, 0.04, 00.27,
@@ -48,16 +48,16 @@ void mainC() {
 
     cout << A << endl;
     cout << B << endl;
+    */
 
-    /*
-    mat A = matrix::random_uniform(3, 3, 0);
-    mat B = matrix::random_uniform(3, 4, 0);
+    mat A = matrix::random_uniform(2, 2, 0.05);
+    mat B = matrix::random_uniform(2, 4, 0.05);
 
     cout << A << endl;
     cout << B << endl;
 
-    vec pi = matrix::random_uniform(1, 3, 0).get_row(0);
-     */
+    vec pi = matrix::random_uniform(1, 2, 0.05).get_row(0);
+
 
 
     int iterations = hmm::model_estimate(A, B, pi, obs_seq, true, 5000);
@@ -71,8 +71,8 @@ void mainC() {
     else
         cout << "Did not converge" << endl;
 
-    cout << A - Actual << endl;
-    cout << B - Bctual << endl;
+    //cout << A - Actual << endl;
+    //cout << B - Bctual << endl;
 
 
 }
