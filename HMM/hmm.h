@@ -6,6 +6,12 @@
 
 using namespace globals;
 
+struct Lambda {
+    matrix* A;
+    matrix* B;
+    vector<number>* pi;
+};
+
 class hmm {
     public:
         static matrix a_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int>& obs_seq, vector<number>& c);

@@ -1,15 +1,17 @@
-#include "Player.hpp"
-#include "matrix.h"
-#include "hmm.h"
-#include "globals.h"
 #include <cstdlib>
 #include <iostream>
+
+#include "Player.hpp"
+//#include "matrix.h"
+//#include "hmm.h"
+//#include "globals.h"
 
 namespace ducks
 {
 
 Player::Player()
 {
+
 }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)

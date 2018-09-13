@@ -58,7 +58,10 @@ void mainC() {
 
     vec pi = matrix::random_uniform(1, 2, 0.05).get_row(0);
 
-
+    struct Lambda lambda;
+    lambda.A = &A;
+    lambda.B = &B;
+    lambda.pi = &pi;
 
     int iterations = hmm::model_estimate(A, B, pi, obs_seq, true, 5000);
 
