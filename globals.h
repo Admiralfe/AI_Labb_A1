@@ -5,7 +5,7 @@
 namespace globals {
     typedef double number;
     const double EPSILON = 0.00001;
-    const double PROB_EPSILON = 0.00001;
+    const double PROB_EPSILON = 0.0001;
     const double MAX_ITERS = 50;
     const int FLOAT_PRECISION = 3;
 }

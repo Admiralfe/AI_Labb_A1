@@ -46,10 +46,10 @@ void mainC() {
            });
 
 
-    mat A = matrix::random_uniform(3, 3, 0.2);
-    mat B = matrix::random_uniform(3, 4, 0.2);
+    mat A = matrix::random_uniform(4, 4, 0.1);
+    mat B = matrix::random_uniform(4, 4, 0.1);
 
-    vec pi = matrix::random_uniform(1, 3, 0.2).get_row(0);
+    vec pi = matrix::random_uniform(1, 4, 0.1).get_row(0);
 
 
     int iterations = hmm::model_estimate(A, B, pi, obs_seq, true, 5000);
@@ -63,8 +63,8 @@ void mainC() {
     else
         cout << "Did not converge" << endl;
 
-    cout << A.distance(Actual) << endl;
-    cout << B.distance(Bctual) << endl;
+    //cout << A - Actual << endl;
+    //cout << B - Bctual << endl;
 
 
 }
