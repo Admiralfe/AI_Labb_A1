@@ -13,13 +13,14 @@ typedef matrix mat;
 void mainC() {
     vector<int> obs_seq = matrix::parse_intvec_stdin();
 
-    /*
     mat A = mat(3, 3);
     A.fill({
-        0.54, 0.26, 0.20,
-        0.19, 0.53, 0.28,
-        0.22, 0.18, 0.6
+        1, 0, 0,
+        0, 1, 0,
+        0, 0, 1
     });
+
+    assert(A.row_stochastic());
 
     mat B = mat(3, 4);
     B.fill({
@@ -28,8 +29,8 @@ void mainC() {
         0.19, 0.21, 0.15, 0.45
     });
 
-    vec pi = {0.3, 0.2, 0.5};
-    */
+    vec pi = {0, 0, 1};
+
 
     mat Actual = mat(3, 3);
     Actual.fill({
@@ -45,11 +46,18 @@ void mainC() {
                    0, 0.1, 0.2, 0.7
            });
 
+    cout << A << endl;
+    cout << B << endl;
 
-    mat A = matrix::random_uniform(4, 4, 0.1);
-    mat B = matrix::random_uniform(4, 4, 0.1);
+    /*
+    mat A = matrix::random_uniform(3, 3, 0);
+    mat B = matrix::random_uniform(3, 4, 0);
 
-    vec pi = matrix::random_uniform(1, 4, 0.1).get_row(0);
+    cout << A << endl;
+    cout << B << endl;
+
+    vec pi = matrix::random_uniform(1, 3, 0).get_row(0);
+     */
 
 
     int iterations = hmm::model_estimate(A, B, pi, obs_seq, true, 5000);
@@ -63,8 +71,8 @@ void mainC() {
     else
         cout << "Did not converge" << endl;
 
-    //cout << A - Actual << endl;
-    //cout << B - Bctual << endl;
+    cout << A - Actual << endl;
+    cout << B - Bctual << endl;
 
 
 }
