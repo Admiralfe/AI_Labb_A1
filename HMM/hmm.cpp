@@ -7,11 +7,24 @@
 #include "globals.h"
 #include "matrix.h"
 
+#define NO_OBS 9
+#define NO_HS 6
+
 using namespace globals;
 using namespace std;
 
 typedef matrix mat;
 typedef vector<number> vec;
+
+Lambda init_lambda() {
+    Lambda res;
+    res.A = matrix::random_uniform(NO_HS, NO_HS, 0.1);
+    res.B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
+    res.pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
+    res.obs_seq = vector<int>(100); //we will have 100 time steps for the birds.
+
+    return res;
+}
 
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
