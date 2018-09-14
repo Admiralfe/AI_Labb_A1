@@ -26,6 +26,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         << "\tMove\t" << pState.getBird(0).getLastObservation()
         << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
 
+    cerr << "current time: " << current_tstep << endl;
     size_t no_birds = pState.getNumBirds();
 
     //Initialize an HMM for each bird on the first time step.
@@ -41,15 +42,24 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     //Add the new observations for each bird to the observation sequence.
     for (int i = 0; i < no_birds; i++) {
-        for (int t = current_tstep; t >= current_tstep - no_new_turns; t--) {
+        for (int t = current_tstep - 1; t >= current_tstep - no_new_turns; t--) {
             this->HMMs[i].obs_seq[t] = pState.getBird(i).getObservation(t);
+            this->HMMs[i].no_obs++;
         }
     }
+
+    cerr << "test:" << endl;
+    for (int t = 0; t < current_tstep; t++) {
+        cerr << HMMs[0].obs_seq[t] << ", ";
+    }
+    cerr << endl;
+    cerr << endl;
+    cerr << "number of observations: " << this->HMMs[0].no_obs << endl;
 
     //We wait some time before we start training our HMMs, to gather enough observations.
     if (this->current_tstep >= 14) {
         for (int i = 0; i < no_birds; i++) {
-            hmm::model_estimate(this->HMMs[i]);
+            hmm::model_estimate(this->HMMs[i], pDue);
         }
     }
 

@@ -7,6 +7,7 @@
 #include <random>
 #include <iomanip>
 #include <chrono>
+#include <algorithm>
 
 #include "matrix.h"
 #include "globals.h"
@@ -147,10 +148,22 @@ matrix matrix::random_uniform(int h, int w, double variance) {
         for (int j = 0; j < w; j++) {
             //We set the last element in each row so that the matrix becomes row stochastic,
             //that is each row must sum to 1.
-            if (j == (w - 1))
+            if (j == (w - 1)) {
+                //Make sure the last element doesn't become negative.
+                while (current_row_sum > 1) {
+                    //Divide all previous elements by 1.1 until we no longer have negative last value.
+                    for (int k = 0; k < w -1; k++) {
+                        res.set(i, k, res.get(i, k) / 1.1);
+                    }
+
+                    current_row_sum /= 1.1;
+                }
+
                 res.set(i, j, 1 - current_row_sum);
+            }
             else {
-                double entry = uniform_value + distribution(generator);
+                //We don't want negative values in a row stochastic matrix
+                double entry = max(0.0, uniform_value + distribution(generator));
                 current_row_sum += entry;
                 res.set(i, j, entry);
             }

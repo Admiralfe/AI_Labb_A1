@@ -16,7 +16,7 @@ mkfifo player2server server2player
 
 # Terminal 1:
 ./Skeleton verbose server < player2server > server2player
-
+du
 # Terminal 2:
 ./Skeleton verbose > player2server < server2player
 

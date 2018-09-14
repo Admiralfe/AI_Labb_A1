@@ -9,6 +9,8 @@
 
 #define NO_OBS 9
 #define NO_HS 6
+#define TIME_OUT -2
+#define MAX_ITERS_REACHED -1
 
 using namespace globals;
 using namespace std;
@@ -22,9 +24,10 @@ Lambda::Lambda() {
     pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
 
     obs_seq = vector<int>(100);
+    no_obs = 0;
 }
 
-Lambda::Lambda(matrix transition, matrix emission, vector<number> init_state, vector<int> observations) {
+Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<number>& init_state, const vector<int>& observations) {
     A = transition;
     B = emission;
     pi = init_state;
@@ -36,7 +39,9 @@ Lambda::Lambda(matrix transition, matrix emission, vector<number> init_state, ve
 //c kommer att populeras med normeringskonstanter
 matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
     int no_states = lambda.A.getHeight();
-    int seq_length = (int) lambda.obs_seq.size();
+    int seq_length = lambda.no_obs;
+
+    //cerr << "XD " << seq_length << endl;
     
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
@@ -82,7 +87,7 @@ matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
 //förutsätter att en alpha-pass redan gjorts och att värdena i c inte har ändrats
 matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha) {
     int no_states = lambda.A.getHeight();
-    int seq_length = (int) lambda.obs_seq.size();
+    int seq_length = lambda.no_obs;
 
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
@@ -131,7 +136,7 @@ matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& 
 
 vector<int> hmm::viterbi(const Lambda& lambda) {
     int no_states = lambda.A.getHeight();
-    int seq_length = lambda.obs_seq.size();
+    int seq_length = lambda.no_obs;
 
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
@@ -195,31 +200,36 @@ vector<int> hmm::viterbi(const Lambda& lambda) {
     return res;
 }
 
-int hmm::model_estimate(Lambda& lambda, bool verbose, int max_iter) {
-    vector<number> c = vector<number>(lambda.obs_seq.size());
+int hmm::model_estimate(Lambda& lambda, const Deadline& pDue, bool verbose, int max_iter) {
+    vector<number> c = vector<number>(lambda.no_obs);
     int iters = 0;
     int maxiters = max_iter;
 
     number old_log_prob = -std::numeric_limits<double>::infinity();
+
+    cerr << lambda.A << endl;
 
     matrix alpha = hmm::a_pass(lambda, c);
     matrix beta = hmm::b_pass(lambda, c, alpha);
     hmm::reestimate(lambda, alpha, beta);
 
     while (iters < maxiters) {
+        if (pDue.remainingMs() < 5) {
+            return TIME_OUT;
+        }
         iters++;
         number log_prob = 0;
 
-        for (int i = 0; i < lambda.obs_seq.size(); i++) {
+        for (int i = 0; i < lambda.no_obs; i++) {
             log_prob += log(c[i]);
         }
 
         log_prob = -log_prob;
-        
+
         if (verbose && ((iters & 15) == 15)) {
-            cout << iters << ":\t" << log_prob << endl;
-            if ((iters & 255) == 255)
-                cout.flush();
+            //cout << iters << ":\t" << log_prob << endl;
+            //if ((iters & 255) == 255)
+            //    cout.flush();
         }
 
         if (log_prob - old_log_prob > PROB_EPSILON) {
@@ -233,7 +243,7 @@ int hmm::model_estimate(Lambda& lambda, bool verbose, int max_iter) {
         }
     }
 
-    return -1;
+    return MAX_ITERS_REACHED;
 }
 
 //Comparison if two float values are within EPSILON of each other.
@@ -245,7 +255,7 @@ bool number_equal(number a, number b) {
 //A, B och pi kommer att skrivas över
 void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
     int no_states = lambda.A.getHeight();
-    int seq_length = lambda.obs_seq.size();
+    int seq_length = lambda.no_obs;
 
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
