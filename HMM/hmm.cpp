@@ -340,20 +340,31 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
     }
 }
 
-void flood_fill(vector<int>& res, const vector<pair<int, int>>& tree, int node, int number) {
+int flood_fill(vector<int>& res, const vector<pair<int, int>>& tree, int node, int number) {
     if (res[node] != 0)
-        return;
+        return 0;
     res[node] = number;
-    for (auto p : tree) {
-        if (p.first == node)
-            flood_fill(res, tree, p.second, number);
-        else if (p.second == node)
-            flood_fill(res, tree, p.first, number);
+
+    int tot = 1;
+
+    for (int i = 0; i < tree.size(); i++) {
+        if (tree[i].first == node)
+            tot += flood_fill(res, tree, tree[i].second, number);
+        else if (tree[i].second == node)
+            tot += flood_fill(res, tree, tree[i].first, number);
     }
+
+    return tot;
 }
 
 vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_groups) {
-    assert(number_of_groups > 0);
+    //assert(number_of_groups > 0);
+    //assert(number_of_groups > hmms.size());
+    if (number_of_groups > hmms.size()) {
+        cerr << "Too few hmms (" << hmms.size() << " vs " << number_of_groups << ")" << endl;
+        vector<int> res;
+        return res;
+    }
     matrix distances(hmms.size(), hmms.size());
 
     number distance = 0;
@@ -369,16 +380,18 @@ vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_group
         }
     }
 
+    cerr << distances << endl;
+
     cerr << "Calculating MST" << endl;
 
     //prim's algorithm to build a MST
-    vector<pair<int, int>> tree(hmms.size() - 1);
+    vector<pair<int, int>> tree;
     std::set<int> nodes_in_tree;
     std::set<int> nodes_not_in_tree;
 
     nodes_in_tree.insert(0);
 
-    for (int i = 0; i < hmms.size(); i++)
+    for (int i = 1; i < hmms.size(); i++)
         nodes_not_in_tree.insert(i);
 
     pair<int, int> minedge;
@@ -411,24 +424,22 @@ vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_group
         }
     );
 
-    if (true) {
-        for (auto p : tree)
-            cerr << distances.get(p.first, p.second) << "\t";
-        cerr << endl;
-    }
+    for (auto p : tree)
+        cerr << "(" << p.first << ", " << p.second << ")" << "\t";
+    cerr << endl;
 
-    cerr << "Pruning " << number_of_groups << "edges from MST" << endl;
+    cerr << "Pruning " << (number_of_groups - 1) << " edges from MST" << endl;
 
     //remove number_of_groups longest edges
     std::set<int> nodes_to_check;
     vector<pair<int, int>> pruning = vector<pair<int, int>>(number_of_groups);
-    for (int i = 0; i < number_of_groups && tree.size() - i - 1 >= 0; i++) {
+    for (int i = 0; i < number_of_groups - 1 && tree.size() - i - 1 >= 0; i++) {
         pruning[i] = tree[tree.size() - i - 1];
         nodes_to_check.insert(pruning[i].first);
         nodes_to_check.insert(pruning[i].second);
     }
 
-    for (int i = 0; i < number_of_groups && tree.size() - i - 1 >= 0; i++)
+    for (int i = 0; i < number_of_groups - 1 && tree.size() - i - 1 >= 0; i++)
         tree.erase(tree.begin() + tree.size() - 1);
 
     cerr << "Assigning numbers to clusters" << endl;
@@ -438,9 +449,9 @@ vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_group
     int groupnumber = 1;
 
     for (auto node : nodes_to_check) {
-        flood_fill(res, tree, node, groupnumber);
-        groupnumber++;
-        break;
+        int groupsize = flood_fill(res, tree, node, groupnumber);
+        if (groupsize > 0)
+            groupnumber++;
     }
 
     return res;
