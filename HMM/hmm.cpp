@@ -36,6 +36,44 @@ Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<nu
     obs_seq = observations;
 }
 
+int hmm::next_obs_guess(Lambda& lambda) {
+    int no_diff_obs = lambda.B.getWidth();
+
+    number max_log_prob = -std::numeric_limits<double>::infinity();
+    number log_prob;
+    int next_obs_guess = 0;
+
+    //cerr << "In next_obs_guess: " << lambda.obs_seq[lambda.no_obs - 1] << endl;
+
+    //Iterate through the possible next observations
+    for (int obs = 0; obs < no_diff_obs; obs++) {
+        log_prob = 0;
+
+        vector<number> c = vector<number>(lambda.no_obs + 1);
+
+        //Add next observation guess to the sequence
+        lambda.obs_seq[lambda.no_obs] = obs;
+        lambda.no_obs++;
+        hmm::a_pass(lambda, c);
+        //Compute log probability and pick maximum probability one.
+        for (int i = 0; i < lambda.no_obs; i++) {
+            log_prob += log(c[i]);
+        }
+
+        log_prob = -log_prob;
+
+        //cerr << "current (log) probability: " << log_prob << endl;
+        //cerr << "max (log) probability: " << max_log_prob << endl;
+        if (log_prob > max_log_prob) {
+            next_obs_guess = obs;
+            max_log_prob = log_prob;
+        }
+
+        lambda.no_obs--;
+    }
+
+    return next_obs_guess;
+}
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
 //c kommer att populeras med normeringskonstanter
