@@ -18,6 +18,8 @@ class Lambda {
 
         Lambda();
         Lambda(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int> &obs_seq);
+        
+        static vector<int> group_models(const vector<Lambda>& hmms, int number_of_groups);
 };
 
 Lambda init_lambda();
@@ -32,7 +34,5 @@ class hmm {
 };
 
 bool number_equal(number a, number b);
-
-vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups);
 
 #endif //AILABB_A1_hmm_H

@@ -352,7 +352,7 @@ void flood_fill(vector<int>& res, const vector<pair<int, int>>& tree, int node, 
     }
 }
 
-vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups) {
+vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_groups) {
     assert(number_of_groups > 0);
     matrix distances(hmms.size(), hmms.size());
 
@@ -411,7 +411,13 @@ vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups
         }
     );
 
-    cerr << "Pruning MST" << endl;
+    if (true) {
+        for (auto p : tree)
+            cerr << distances.get(p.first, p.second) << "\t";
+        cerr << endl;
+    }
+
+    cerr << "Pruning " << number_of_groups << "edges from MST" << endl;
 
     //remove number_of_groups longest edges
     std::set<int> nodes_to_check;
