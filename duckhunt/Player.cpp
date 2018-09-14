@@ -12,6 +12,7 @@ namespace ducks
 Player::Player()
 {
     this->current_tstep = 0;
+    this->current_round = 0;
 }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
@@ -20,6 +21,11 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
      * Here you should write your clever algorithms to get the best action.
      * This skeleton never shoots.
      */
+
+    if (current_round != pState.getRound()) {
+        current_round = pState.getRound();
+        current_tstep = 0;
+    }
 
     cerr << "Round\t" << pState.getRound()
         << "\tBirds\t" << pState.getNumBirds()
@@ -31,7 +37,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     //Initialize an HMM for each bird on the first time step.
     if (this->current_tstep == 0) {
-        this->HMMs = vector<Lambda>(100);
+        this->HMMs = vector<Lambda>(no_birds);
         for (int i = 0; i < no_birds; i++) {
             this->HMMs[i] = Lambda();
         }
@@ -48,6 +54,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     for (int i = 0; i < no_birds; i++) {
         for (int t = current_tstep - 1; t >= current_tstep - no_new_turns; t--) {
             this->HMMs[i].obs_seq[t] = pState.getBird(i).getObservation(t);
+            //this->HMMs[i].obs_seq.push_back(pState.getBird(i).getObservation(t));
             this->HMMs[i].no_obs++;
         }
     }
@@ -62,13 +69,15 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     int iters;
     //We wait some time before we start training our HMMs, to gather enough observations.
-    if (this->current_tstep >= 50) {
+    if (this->current_tstep == 95) {
         for (int i = 0; i < no_birds; i++) {
             iters = hmm::model_estimate(this->HMMs[i], pDue);
         }
 
         cerr << "iterations: " << iters << endl;
     }
+
+
 
     // This line choose not to shoot
     return cDontShoot;

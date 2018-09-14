@@ -72,6 +72,7 @@ public:
 
     private:
         int current_tstep;
+        int current_round;
         vector<Lambda> HMMs;
 };
 

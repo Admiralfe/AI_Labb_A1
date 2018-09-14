@@ -25,7 +25,7 @@ Lambda::Lambda() {
     B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
     pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
 
-    obs_seq = vector<int>(100);
+    obs_seq = vector<int>(200);
     no_obs = 0;
 }
 
