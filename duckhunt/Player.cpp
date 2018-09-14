@@ -89,6 +89,15 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
     cerr << "Guessing time!" << endl << flush;
 
+    vector<int> numbering = Lambda::group_models(this->HMMs, ESpecies::COUNT_SPECIES);
+
+    cerr << "Guesses calculated: ";
+
+    for (int i : numbering)
+        cerr << i << " ";
+    
+    cerr << endl;
+
     return lGuesses;
 }
 
