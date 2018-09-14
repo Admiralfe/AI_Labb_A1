@@ -7,6 +7,7 @@
 #include <random>
 #include <iomanip>
 #include <chrono>
+#include <set>
 
 #include "matrix.h"
 #include "globals.h"
@@ -296,6 +297,44 @@ number matrix::distance(const matrix& other, int norm) const {
     }
 
     return res;
+}
+
+number matrix::row_distance_squared(const matrix& other, int i1, int i2) const {
+    number sum = 0;
+    for (int j = 0; j < width; j++)
+        sum += (elements[i1][j] - other.elements[i2][j]) * (elements[i1][j] - other.elements[i2][j]);
+
+    return sum;
+}
+
+number matrix::distance_squared(const matrix& other) const {
+    assert(height == other.height);
+    assert(width == other.width);
+
+    number total_dist = 0;
+
+    std::set<int> left_to_check;
+    for (int i = 0; i < height; i++)
+        left_to_check.insert(i);
+
+    for (int i = 0; i < height; i++) {
+        number mindist = numeric_limits<number>::max();
+        int minrow = -1;
+        number dist = mindist;
+
+        for (auto row : left_to_check) {
+            dist = this->row_distance_squared(other, i, row);
+            if (dist < mindist) {
+                mindist = dist;
+                minrow = row;
+            }
+        }
+        
+        total_dist += mindist;
+        left_to_check.erase(minrow);
+    }
+
+    return total_dist;
 }
 
 ostream& operator<< (ostream& outs, const matrix& m) {

@@ -38,10 +38,12 @@ public:
 
     bool row_stochastic() const;
     number distance(const matrix& other, int norm = 2) const;
+    number distance_squared(const matrix& other) const;
 
 private:
     int width, height;
     vector<vector<number>> elements;
+    number row_distance_squared(const matrix& other, int i1, int i2) const;
 };
 
 ostream& operator<< (ostream& outs, const matrix& m);

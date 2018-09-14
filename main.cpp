@@ -103,14 +103,23 @@ void mainDE() {
 }
 
 void mainTest() {
-    matrix matrix = matrix::random_uniform(3, 3, 0.01);
+    mat matrix = matrix::random_uniform(3, 3, 0.01);
+    mat matrix2(3, 3);
+    matrix2.fill({
+        0.33, 0.33, 0.33,
+        0.33, 0.33, 0.33,
+        0.5, 0, 0.5
+    });
 
-    cout << matrix << endl;
+    cout << matrix << endl << endl;
+    cout << matrix2 << endl;
+
+    cout << matrix.distance_squared(matrix2);
 }
 
-int old_main() {
+int main() {
     //mainDE();
-    mainC();
-    //mainTest();
+    //mainC();
+    mainTest();
     return 0;
 }
