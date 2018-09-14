@@ -21,6 +21,11 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
      * This skeleton never shoots.
      */
 
+    cerr << "Round\t" << pState.getRound()
+        << "\tBirds\t" << pState.getNumBirds()
+        << "\tMove\t" << pState.getBird(0).getLastObservation()
+        << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
+
     int no_new_turns = pState.getNumNewTurns();
     this->current_tstep += no_new_turns;
     size_t no_birds = pState.getNumBirds();
@@ -58,6 +63,9 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
      */
 
     std::vector<ESpecies> lGuesses(pState.getNumBirds(), SPECIES_UNKNOWN);
+
+    cerr << "Guessing time!" << endl << flush;
+
     return lGuesses;
 }
 
