@@ -26,16 +26,18 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         << "\tMove\t" << pState.getBird(0).getLastObservation()
         << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
 
-    int no_new_turns = pState.getNumNewTurns();
-    this->current_tstep += no_new_turns;
     size_t no_birds = pState.getNumBirds();
 
     //Initialize an HMM for each bird on the first time step.
     if (this->current_tstep == 0) {
+        this->HMMs = vector<Lambda>(100);
         for (int i = 0; i < no_birds; i++) {
-            this->HMMs[i] = init_lambda();
+            this->HMMs[i] = Lambda();
         }
     }
+
+    int no_new_turns = pState.getNumNewTurns();
+    this->current_tstep += no_new_turns;
 
     //Add the new observations for each bird to the observation sequence.
     for (int i = 0; i < no_birds; i++) {
@@ -47,7 +49,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     //We wait some time before we start training our HMMs, to gather enough observations.
     if (this->current_tstep >= 14) {
         for (int i = 0; i < no_birds; i++) {
-            hmm::model_estimate(this->HMMs[i];
+            hmm::model_estimate(this->HMMs[i]);
         }
     }
 
@@ -56,6 +58,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     //This line would predict that bird 0 will move right and shoot at it
     //return Action(0, MOVE_RIGHT);
+
 }
 
 std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDue)

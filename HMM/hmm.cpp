@@ -16,14 +16,19 @@ using namespace std;
 typedef matrix mat;
 typedef vector<number> vec;
 
-Lambda init_lambda() {
-    Lambda res;
-    res.A = matrix::random_uniform(NO_HS, NO_HS, 0.1);
-    res.B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
-    res.pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
-    res.obs_seq = vector<int>(100); //we will have 100 time steps for the birds.
+Lambda::Lambda() {
+    A = matrix::random_uniform(NO_HS, NO_HS, 0.1);
+    B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
+    pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
 
-    return res;
+    obs_seq = vector<int>(100);
+}
+
+Lambda::Lambda(matrix transition, matrix emission, vector<number> init_state, vector<int> observations) {
+    A = transition;
+    B = emission;
+    pi = init_state;
+    obs_seq = observations;
 }
 
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,

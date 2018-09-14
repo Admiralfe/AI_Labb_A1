@@ -17,7 +17,8 @@ public:
     matrix operator *(number x);
     matrix operator +(const matrix& m);
     matrix operator -(const matrix& m);
-    
+
+    matrix() = default;
     matrix(int height, int width);
     number get(int i, int j) const;
     void set(int i, int j, number element);

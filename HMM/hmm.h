@@ -6,11 +6,15 @@
 
 using namespace globals;
 
-typedef struct Lambda {
-    matrix A;
-    matrix B;
-    vector<number> pi;
-    vector<int> obs_seq;
+class Lambda {
+    public :
+        matrix A;
+        matrix B;
+        vector<number> pi;
+        vector<int> obs_seq;
+
+        Lambda();
+        Lambda(matrix A, matrix B, vector<number> pi, vector<int> obs_seq);
 };
 
 Lambda init_lambda();
