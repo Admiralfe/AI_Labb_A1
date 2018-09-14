@@ -343,6 +343,8 @@ vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups
 
     number distance = 0;
 
+    cerr << "Calculating distances" << endl;
+
     //calculate distances between models
     for (int i = 0; i < distances.getHeight(); i++) {
         for (int j = 0; j < i; j++) {
@@ -351,6 +353,8 @@ vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups
             distances.set(j, i, distance);
         }
     }
+
+    cerr << "Calculating MST" << endl;
 
     //prim's algorithm to build a MST
     vector<pair<int, int>> tree(hmms.size() - 1);
@@ -382,6 +386,8 @@ vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups
         nodes_in_tree.insert(minedge.second);
         nodes_not_in_tree.erase(minedge.second);
     }
+
+    cerr << "Sorting MST" << endl;
     
     //sort MST edges
     sort(tree.begin(), tree.end(),
@@ -389,6 +395,8 @@ vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups
             return distances.get(a.first, a.second) < distances.get(b.first, b.second);
         }
     );
+
+    cerr << "Pruning MST" << endl;
 
     //remove number_of_groups longest edges
     std::set<int> nodes_to_check;
@@ -401,6 +409,8 @@ vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups
 
     for (int i = 0; i < number_of_groups && tree.size() - i - 1 >= 0; i++)
         tree.erase(tree.begin() + tree.size() - 1);
+
+    cerr << "Assigning numbers to clusters" << endl;
 
     //flood fill the clusters with their numbers
     vector<int> res(hmms.size());
