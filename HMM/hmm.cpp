@@ -29,24 +29,24 @@ Lambda init_lambda() {
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
 //c kommer att populeras med normeringskonstanter
-matrix hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int>& obs_seq, vector<number>& c) {
-    int no_states = A.getHeight();
-    int seq_length = obs_seq.size();
+matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
+    int no_states = lambda.A.getHeight();
+    int seq_length = (int) lambda.obs_seq.size();
     
-    assert(A.getWidth() == no_states);
-    assert(B.getHeight() == no_states);
-    assert(pi.size() == no_states);
+    assert(lambda.A.getWidth() == no_states);
+    assert(lambda.B.getHeight() == no_states);
+    assert(lambda.pi.size() == no_states);
     assert(seq_length > 0);
     assert(c.size() == seq_length);
-    assert(A.row_stochastic());
-    assert(B.row_stochastic());
+    assert(lambda.A.row_stochastic());
+    assert(lambda.B.row_stochastic());
 
     c = vector<number>(seq_length);
 
     mat alpha = mat(no_states, seq_length);
 
     for (int i = 0; i < no_states; i++) {
-        alpha.set(i, 0, pi[i] * B.get(i, obs_seq[0]));
+        alpha.set(i, 0, lambda.pi[i] * lambda.B.get(i, lambda.obs_seq[0]));
         c[0] += alpha.get(i, 0);
     }
 
@@ -61,8 +61,8 @@ matrix hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
         for (int i = 0; i < no_states; i++) {
             sum = 0;
             for (int j = 0; j < no_states; j++)
-                sum += alpha.get(j, t - 1) * A.get(j, i);
-            elem = sum * B.get(i, obs_seq[t]);
+                sum += alpha.get(j, t - 1) * lambda.A.get(j, i);
+            elem = sum * lambda.B.get(i, lambda.obs_seq[t]);
             alpha.set(i, t, elem);
             c[t] += elem;
         }
@@ -75,19 +75,19 @@ matrix hmm::a_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
 }
 
 //förutsätter att en alpha-pass redan gjorts och att värdena i c inte har ändrats
-matrix hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int>& obs_seq, const vector<number>& c, const matrix& alpha) {
-    int no_states = A.getHeight();
-    int seq_length = obs_seq.size();
+matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha) {
+    int no_states = lambda.A.getHeight();
+    int seq_length = (int) lambda.obs_seq.size();
 
-    assert(A.getWidth() == no_states);
-    assert(B.getHeight() == no_states);
-    assert(pi.size() == no_states);
+    assert(lambda.A.getWidth() == no_states);
+    assert(lambda.B.getHeight() == no_states);
+    assert(lambda.pi.size() == no_states);
     assert(seq_length > 0);
     assert(c.size() == seq_length);
     assert(alpha.getHeight() == no_states);
     assert(alpha.getWidth() == seq_length);
-    assert(A.row_stochastic());
-    assert(B.row_stochastic());
+    assert(lambda.A.row_stochastic());
+    assert(lambda.B.row_stochastic());
 
     mat beta = mat(no_states, seq_length);
 
@@ -98,7 +98,7 @@ matrix hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
         for (int i = 0; i < no_states; i++) {
             number sum = 0;
             for (int j = 0; j < no_states; j++)
-                sum += A.get(i, j) * B.get(j, obs_seq[t + 1]) * beta.get(j, t + 1);
+                sum += lambda.A.get(i, j) * lambda.B.get(j, lambda.obs_seq[t + 1]) * beta.get(j, t + 1);
 
             beta.set(i, t, c[t] * sum);
         }
@@ -124,13 +124,13 @@ matrix hmm::b_pass(const matrix& A, const matrix& B, const vector<number>& pi, c
     return beta;
 }
 
-vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_seq) {
-    int no_states = A.getHeight();
-    int seq_length = obs_seq.size();
+vector<int> hmm::viterbi(const Lambda& lambda) {
+    int no_states = lambda.A.getHeight();
+    int seq_length = lambda.obs_seq.size();
 
-    assert(A.getWidth() == no_states);
-    assert(B.getHeight() == no_states);
-    assert(pi.size() == no_states);
+    assert(lambda.A.getWidth() == no_states);
+    assert(lambda.B.getHeight() == no_states);
+    assert(lambda.pi.size() == no_states);
     assert(seq_length > 0);
 
     //Use logarithms for entries to avoid underflows
@@ -141,7 +141,7 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
 
     //Initialize first column
     for (int i = 0; i < no_states; i++) {
-        number entry = log(B.get(i, obs_seq[0])) + log(pi[i]);
+        number entry = log(lambda.B.get(i, lambda.obs_seq[0])) + log(lambda.pi[i]);
         log_delta.set(i, 0, entry);
     }
 
@@ -151,11 +151,11 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
             int index_max = 0;
 
             //Initialize the value of max for j = 0.
-            number max = log_delta.get(0, t - 1) + log(A.get(0, i));
+            number max = log_delta.get(0, t - 1) + log(lambda.A.get(0, i));
 
             //Find the max_{j} of all new deltas by iterating over j.
             for (int j = 1; j < no_states; j++) {
-                number new_max = log_delta.get(j, t - 1) + log(A.get(j, i));
+                number new_max = log_delta.get(j, t - 1) + log(lambda.A.get(j, i));
 
                 if (new_max > max) {
                     max = new_max;
@@ -163,7 +163,7 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
                 }
             }
 
-            log_delta.set(i, t, max  + log(B.get(i, obs_seq[t])));
+            log_delta.set(i, t, max  + log(lambda.B.get(i, lambda.obs_seq[t])));
             delta_index[i][t] = index_max;
         }
     }
@@ -190,22 +190,22 @@ vector<int> hmm::viterbi(matrix A, matrix B, vector<number> pi, vector<int> obs_
     return res;
 }
 
-int hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> obs_seq, bool verbose, int max_iter) {
-    vector<number> c = vector<number>(obs_seq.size());
+int hmm::model_estimate(Lambda& lambda, bool verbose, int max_iter) {
+    vector<number> c = vector<number>(lambda.obs_seq.size());
     int iters = 0;
     int maxiters = max_iter;
 
     number old_log_prob = -std::numeric_limits<double>::infinity();
 
-    matrix alpha = hmm::a_pass(A, B, pi, obs_seq, c);
-    matrix beta = hmm::b_pass(A, B, pi, obs_seq, c, alpha);
-    hmm::reestimate(A, B, pi, obs_seq, alpha, beta);
+    matrix alpha = hmm::a_pass(lambda, c);
+    matrix beta = hmm::b_pass(lambda, c, alpha);
+    hmm::reestimate(lambda, alpha, beta);
 
     while (iters < maxiters) {
         iters++;
         number log_prob = 0;
 
-        for (int i = 0; i < obs_seq.size(); i++) {
+        for (int i = 0; i < lambda.obs_seq.size(); i++) {
             log_prob += log(c[i]);
         }
 
@@ -220,9 +220,9 @@ int hmm::model_estimate(matrix& A, matrix& B, vector<number>& pi, vector<int> ob
         if (log_prob - old_log_prob > PROB_EPSILON) {
             old_log_prob = log_prob;
 
-            alpha = hmm::a_pass(A, B, pi, obs_seq, c);
-            beta = hmm::b_pass(A, B, pi, obs_seq, c, alpha);
-            hmm::reestimate(A, B, pi, obs_seq, alpha, beta);
+            alpha = hmm::a_pass(lambda, c);
+            beta = hmm::b_pass(lambda, c, alpha);
+            hmm::reestimate(lambda, alpha, beta);
         } else {
             return iters;
         }
@@ -238,20 +238,20 @@ bool number_equal(number a, number b) {
 
 //räknar ut ny modell (A, B, pi) utifrån datan från en alpha- och en beta-pass
 //A, B och pi kommer att skrivas över
-void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>& obs_seq, const matrix& alpha, const matrix& beta) {
-    int no_states = A.getHeight();
-    int seq_length = obs_seq.size();
+void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
+    int no_states = lambda.A.getHeight();
+    int seq_length = lambda.obs_seq.size();
 
-    assert(A.getWidth() == no_states);
-    assert(B.getHeight() == no_states);
-    assert(pi.size() == no_states);
+    assert(lambda.A.getWidth() == no_states);
+    assert(lambda.B.getHeight() == no_states);
+    assert(lambda.pi.size() == no_states);
     assert(seq_length > 0);
     assert(alpha.getHeight() == no_states);
     assert(alpha.getWidth() == seq_length);
     assert(beta.getHeight() == no_states);
     assert(beta.getWidth() == seq_length);
-    assert(A.row_stochastic());
-    assert(B.row_stochastic());
+    assert(lambda.A.row_stochastic());
+    assert(lambda.B.row_stochastic());
 
     matrix gamma = matrix(no_states, seq_length); //indexed gamma.get(i, t)
     vector<matrix*> digamma = vector<matrix*>(seq_length); //indexed digamma[t].get(i, j)
@@ -263,11 +263,11 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>
 
         for (int i = 0; i < no_states; i++)
             for (int j = 0; j < no_states; j++)
-                denom += alpha.get(i, t) * A.get(i, j) * B.get(j, obs_seq[t + 1]) * beta.get(j, t + 1);
+                denom += alpha.get(i, t) * lambda.A.get(i, j) * lambda.B.get(j, lambda.obs_seq[t + 1]) * beta.get(j, t + 1);
 
         for (int i = 0; i < no_states; i++) {
             for (int j = 0; j < no_states; j++) {
-                digamma[t]->set(i, j, alpha.get(i, t) * A.get(i, j) * B.get(j, obs_seq[t + 1]) * beta.get(j, t + 1) / denom);
+                digamma[t]->set(i, j, alpha.get(i, t) * lambda.A.get(i, j) * lambda.B.get(j, lambda.obs_seq[t + 1]) * beta.get(j, t + 1) / denom);
                 gamma.set(i, t, gamma.get(i, t) + digamma[t]->get(i, j));
             }
         }
@@ -284,7 +284,7 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>
 
     //pi
     for (int i = 0; i < no_states; i++)
-        pi[i] = gamma.get(i, 0);
+        lambda.pi[i] = gamma.get(i, 0);
 
     //A
     number numer;
@@ -298,22 +298,22 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>
                 denom += gamma.get(i, t);
             }
 
-            A.set(i, j, numer / denom);
+            lambda.A.set(i, j, numer / denom);
         }
     }
 
     //B
     for (int i = 0; i < no_states; i++) {
-        for (int j = 0; j < B.getWidth(); j++) {
+        for (int j = 0; j < lambda.B.getWidth(); j++) {
             numer = 0;
             denom = 0;
 
             for (int t = 0; t < seq_length; t++) {
-                if (obs_seq[t] == j)
+                if (lambda.obs_seq[t] == j)
                     numer += gamma.get(i, t);
                 denom += gamma.get(i, t);
             }
-            B.set(i, j, numer / denom);
+            lambda.B.set(i, j, numer / denom);
         }
     }
 
