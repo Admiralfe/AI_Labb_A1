@@ -6,11 +6,14 @@
 
 using namespace globals;
 
-struct Lambda {
-    matrix* A;
-    matrix* B;
-    vector<number>* pi;
+typedef struct Lambda {
+    matrix A;
+    matrix B;
+    vector<number> pi;
+    vector<int> obs_seq;
 };
+
+Lambda init_lambda();
 
 class hmm {
     public:

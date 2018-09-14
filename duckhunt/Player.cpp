@@ -3,15 +3,15 @@
 
 #include "Player.hpp"
 #include "matrix.h"
-#include "hmm.h"
 #include "globals.h"
+#include "../HMM/hmm.h"
 
 namespace ducks
 {
 
 Player::Player()
 {
-
+    this->current_tstep = 0;
 }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
@@ -20,11 +20,33 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
      * Here you should write your clever algorithms to get the best action.
      * This skeleton never shoots.
      */
-    
+
     cerr << "Round\t" << pState.getRound()
         << "\tBirds\t" << pState.getNumBirds()
         << "\tMove\t" << pState.getBird(0).getLastObservation()
         << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
+
+    int no_new_turns = pState.getNumNewTurns();
+    this->current_tstep += no_new_turns;
+    size_t no_birds = pState.getNumBirds();
+
+    for (int i = 0; i < no_birds; i++) {
+        for (int t = current_tstep; t >= current_tstep - no_new_turns; t--) {
+            this->HMMs[i].obs_seq[t] = pState.getBird(i).getObservation(t);
+        }
+    }
+
+    //Initialize an HMM for each bird on the first time step.
+    if (this->current_tstep == 0) {
+        for (int i = 0; i < no_birds; i++) {
+            this->HMMs[i] = init_lambda();
+        }
+    }
+
+    //We wait some time before we start training our HMMs, to gather enough observations.
+    if (this->current_tstep >= 14) {
+
+    }
 
     // This line choose not to shoot
     return cDontShoot;
