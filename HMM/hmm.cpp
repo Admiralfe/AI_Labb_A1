@@ -2,6 +2,8 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <set>
+#include <algorithm>
 
 #include "hmm.h"
 #include "globals.h"
@@ -321,4 +323,94 @@ void hmm::reestimate(matrix& A, matrix& B, vector<number>& pi, const vector<int>
         delete digamma[t];
         digamma[t] = nullptr;
     }
+}
+
+void flood_fill(vector<int>& res, const vector<pair<int, int>>& tree, int node, int number) {
+    if (res[node] != 0)
+        return;
+    res[node] = number;
+    for (auto p : tree) {
+        if (p.first == node)
+            flood_fill(res, tree, p.second, number);
+        else if (p.second == node)
+            flood_fill(res, tree, p.first, number);
+    }
+}
+
+vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups) {
+    assert(number_of_groups > 0);
+    matrix distances(hmms.size(), hmms.size());
+
+    number distance = 0;
+
+    //calculate distances between models
+    for (int i = 0; i < distances.getHeight(); i++) {
+        for (int j = 0; j < i; j++) {
+            distance = hmms[i].A.distance(hmms[j].A) + hmms[i].B.distance(hmms[j].B);
+            distances.set(i, j, distance);
+            distances.set(j, i, distance);
+        }
+    }
+
+    //prim's algorithm to build a MST
+    vector<pair<int, int>> tree(hmms.size() - 1);
+    std::set<int> nodes_in_tree;
+    std::set<int> nodes_not_in_tree;
+
+    nodes_in_tree.insert(0);
+
+    for (int i = 0; i < hmms.size(); i++)
+        nodes_not_in_tree.insert(i);
+
+    pair<int, int> minedge;
+    number mindist;
+
+    while (nodes_in_tree.size() < hmms.size()) {
+        minedge = {-1, -1};
+        mindist = numeric_limits<number>::max();
+
+        for (auto from : nodes_in_tree) {
+            for (auto to : nodes_not_in_tree) {
+                if (distances.get(from, to) < mindist) {
+                    minedge = {from, to};
+                    mindist = distances.get(from, to);
+                }
+            }
+        }
+
+        tree.push_back(minedge);
+        nodes_in_tree.insert(minedge.second);
+        nodes_not_in_tree.erase(minedge.second);
+    }
+    
+    //sort MST edges
+    sort(tree.begin(), tree.end(),
+        [distances](pair<int, int> a, pair<int, int> b) {
+            return distances.get(a.first, a.second) < distances.get(b.first, b.second);
+        }
+    );
+
+    //remove number_of_groups longest edges
+    std::set<int> nodes_to_check;
+    vector<pair<int, int>> pruning = vector<pair<int, int>>(number_of_groups);
+    for (int i = 0; i < number_of_groups && tree.size() - i - 1 >= 0; i++) {
+        pruning[i] = tree[tree.size() - i - 1];
+        nodes_to_check.insert(pruning[i].first);
+        nodes_to_check.insert(pruning[i].second);
+    }
+
+    for (int i = 0; i < number_of_groups && tree.size() - i - 1 >= 0; i++)
+        tree.erase(tree.begin() + tree.size() - 1);
+
+    //flood fill the clusters with their numbers
+    vector<int> res(hmms.size());
+    int groupnumber = 1;
+
+    for (auto node : nodes_to_check) {
+        flood_fill(res, tree, node, groupnumber);
+        groupnumber++;
+        break;
+    }
+
+    return res;
 }

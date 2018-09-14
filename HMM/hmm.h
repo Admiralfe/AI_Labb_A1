@@ -26,4 +26,6 @@ class hmm {
 
 bool number_equal(number a, number b);
 
+vector<int> lambda_group_models(const vector<Lambda>& hmms, int number_of_groups);
+
 #endif //AILABB_A1_hmm_H
