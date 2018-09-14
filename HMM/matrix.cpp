@@ -262,7 +262,7 @@ vector<number> matrix::get_col(int j) const {
 vector<number> matrix::get_row(int i) const {
     vector<number> res = vector<number>(width);
 
-    for (int j = 0; j < height; j++)
+    for (int j = 0; j < width; j++)
         res[j] = elements[i][j];
 
     return res;

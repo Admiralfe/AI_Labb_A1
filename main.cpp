@@ -3,9 +3,10 @@
 #include <vector>
 #include <cassert>
 
-#include "matrix.h"
-#include "globals.h"
-#include "hmm.h"
+#include "HMM/matrix.h"
+#include "HMM/globals.h"
+#include "HMM/hmm.h"
+#include "HMM/matrix.h"
 
 typedef vector<number> vec;
 typedef matrix mat;
@@ -58,21 +59,16 @@ void mainC() {
 
     vec pi = matrix::random_uniform(1, 2, 0.05).get_row(0);
 
-    struct Lambda lambda;
-    lambda.A = &A;
-    lambda.B = &B;
-    lambda.pi = &pi;
-
-    int iterations = hmm::model_estimate(A, B, pi, obs_seq, true, 5000);
+    //int iterations = hmm::model_estimate(A, B, pi, obs_seq, true, 5000);
 
     cout << "A" << endl << A << endl;
     cout << "B" << endl << B << endl;
     cout << "pi" << endl << pi << endl;
 
-    if (iterations != -1)
-        cout << "Converged after " << iterations << " iterations" << endl;
-    else
-        cout << "Did not converge" << endl;
+    //if (iterations != -1)
+    //    cout << "Converged after " << iterations << " iterations" << endl;
+    //else
+    //    cout << "Did not converge" << endl;
 
     //cout << A - Actual << endl;
     //cout << B - Bctual << endl;
@@ -94,7 +90,7 @@ void mainDE() {
     assert(transition.row_stochastic());
     assert(emission.row_stochastic());
 
-    hmm::model_estimate(transition, emission, state_vec, observation_sequence);
+    //hmm::model_estimate(transition, emission, state_vec, observation_sequence);
 
     transition.to_stdout();
     cout << endl;

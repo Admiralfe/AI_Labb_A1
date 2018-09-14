@@ -37,6 +37,10 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
+    cerr << this->HMMs[0].A << endl;
+    cerr << this->HMMs[0].B << endl;
+    cerr << this->HMMs[0].pi << endl;
+
     int no_new_turns = pState.getNumNewTurns();
     this->current_tstep += no_new_turns;
 
@@ -56,11 +60,14 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     cerr << endl;
     cerr << "number of observations: " << this->HMMs[0].no_obs << endl;
 
+    int iters;
     //We wait some time before we start training our HMMs, to gather enough observations.
-    if (this->current_tstep >= 14) {
+    if (this->current_tstep >= 50) {
         for (int i = 0; i < no_birds; i++) {
-            hmm::model_estimate(this->HMMs[i], pDue);
+            iters = hmm::model_estimate(this->HMMs[i], pDue);
         }
+
+        cerr << "iterations: " << iters << endl;
     }
 
     // This line choose not to shoot

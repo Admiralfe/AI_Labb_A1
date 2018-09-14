@@ -209,8 +209,6 @@ int hmm::model_estimate(Lambda& lambda, const Deadline& pDue, bool verbose, int 
 
     number old_log_prob = -std::numeric_limits<double>::infinity();
 
-    cerr << lambda.A << endl;
-
     matrix alpha = hmm::a_pass(lambda, c);
     matrix beta = hmm::b_pass(lambda, c, alpha);
     hmm::reestimate(lambda, alpha, beta);
@@ -240,6 +238,8 @@ int hmm::model_estimate(Lambda& lambda, const Deadline& pDue, bool verbose, int 
             alpha = hmm::a_pass(lambda, c);
             beta = hmm::b_pass(lambda, c, alpha);
             hmm::reestimate(lambda, alpha, beta);
+
+            //cerr << lambda.A << endl;
         } else {
             return iters;
         }
