@@ -3,7 +3,9 @@
         "vector": "cpp",
         "cmath": "cpp",
         "istream": "cpp",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "deque": "cpp",
+        "unordered_map": "cpp"
     },
     "code-runner.executorMap": {
         "javascript": "node",

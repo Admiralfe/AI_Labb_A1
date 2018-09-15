@@ -357,7 +357,18 @@ int flood_fill(vector<int>& res, const vector<pair<int, int>>& tree, int node, i
     return tot;
 }
 
-vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_groups) {
+void walk_tree(vector<int>& centrality, const vector<pair<int, int>>& tree, pair<int, int> edge, int current) {
+    int other = edge.first == current ? edge.second : edge.first;
+
+    for (int i = 0; i < tree.size(); i++)
+        if ((tree[i].first == other && tree[i].second != current)
+                || (tree[i].second == other && tree[i].first != current)) {
+            walk_tree(centrality, tree, tree[i], other);
+            centrality[current]++;
+        }
+}
+
+vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_groups, bool optimal_guess) {
     //assert(number_of_groups > 0);
     //assert(number_of_groups > hmms.size());
     if (number_of_groups > hmms.size()) {
@@ -374,7 +385,7 @@ vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_group
     //calculate distances between models
     for (int i = 0; i < distances.getHeight(); i++) {
         for (int j = 0; j < i; j++) {
-            distance = hmms[i].A.distance(hmms[j].A) + hmms[i].B.distance(hmms[j].B);
+            distance = hmms[i].A.distance_squared(hmms[j].A) + hmms[i].B.distance_squared(hmms[j].B);
             distances.set(i, j, distance);
             distances.set(j, i, distance);
         }
@@ -432,27 +443,58 @@ vector<int> Lambda::group_models(const vector<Lambda>& hmms, int number_of_group
 
     //remove number_of_groups longest edges
     std::set<int> nodes_to_check;
-    vector<pair<int, int>> pruning = vector<pair<int, int>>(number_of_groups);
     for (int i = 0; i < number_of_groups - 1 && tree.size() - i - 1 >= 0; i++) {
-        pruning[i] = tree[tree.size() - i - 1];
-        nodes_to_check.insert(pruning[i].first);
-        nodes_to_check.insert(pruning[i].second);
+        pair<int, int> p = tree[tree.size() - i - 1];
+        nodes_to_check.insert(p.first);
+        nodes_to_check.insert(p.second);
     }
 
-    for (int i = 0; i < number_of_groups - 1 && tree.size() - i - 1 >= 0; i++)
+    for (int i = 0; i < number_of_groups - 1 && tree.size() - 1 >= 0; i++)
         tree.erase(tree.begin() + tree.size() - 1);
 
     cerr << "Assigning numbers to clusters" << endl;
 
     //flood fill the clusters with their numbers
-    vector<int> res(hmms.size());
+    vector<int> assignment(hmms.size());
     int groupnumber = 1;
 
     for (auto node : nodes_to_check) {
-        int groupsize = flood_fill(res, tree, node, groupnumber);
+        int groupsize = flood_fill(assignment, tree, node, groupnumber);
         if (groupsize > 0)
             groupnumber++;
     }
 
-    return res;
+    cerr << "Group assignment: " << endl;
+    for (auto number : assignment)
+        cerr << number << " ";
+    cerr << endl;
+    
+    if (optimal_guess) {
+        vector<int> optimal_guesses(number_of_groups + 1);
+        vector<int> centrality(hmms.size());
+        
+        for (int i = 0; i < hmms.size(); i++)
+            for (auto edge : tree)
+                if (edge.first == i || edge.second == i)
+                    walk_tree(centrality, tree, edge, i);
+        
+        cerr << "Centrality: ";
+        for (auto node : centrality)
+            cerr << node << " ";
+        cerr << endl;
+
+        for (int group = 1; group < optimal_guesses.size(); group++) {
+            int maxhmm = -1;
+            int maxcentrality = -1;
+            for (int i = 0; i < hmms.size(); i++)
+                if (assignment[i] == group && centrality[i] > maxcentrality) {
+                    maxcentrality = centrality[i];
+                    maxhmm = i;
+                }
+            optimal_guesses[group] = maxhmm;
+        }
+
+        return optimal_guesses;
+    } else
+        return assignment;
 }

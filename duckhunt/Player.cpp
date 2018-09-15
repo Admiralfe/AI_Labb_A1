@@ -98,15 +98,18 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
     cerr << "Guessing time!" << endl << flush;
 
-    vector<int> numbering = Lambda::group_models(this->HMMs, ESpecies::COUNT_SPECIES);
+    vector<int> optimal_guesses = Lambda::group_models(this->HMMs, ESpecies::COUNT_SPECIES, true);
 
     cerr << "Guesses calculated: ";
 
-    for (int i : numbering)
+    for (int i : optimal_guesses)
         cerr << i << " ";
     
     cerr << endl;
 
+    for (int i = 1; i < optimal_guesses.size(); i++)
+        lGuesses[optimal_guesses[i]] = (ESpecies)(i - 1);
+    
     return lGuesses;
 }
 
@@ -123,6 +126,11 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
     /*
      * If you made any guesses, you will find out the true species of those birds in this function.
      */
+
+    cerr << "-- Actual species --" << endl;
+    for (int i = 0; i < pSpecies.size(); i++)
+        if (pSpecies[i] != ESpecies::SPECIES_UNKNOWN)
+            cerr << "Bird " << i << " was " << pSpecies[i] << endl;
 }
 
 

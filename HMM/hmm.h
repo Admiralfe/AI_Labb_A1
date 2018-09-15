@@ -19,7 +19,7 @@ class Lambda {
         Lambda();
         Lambda(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int> &obs_seq);
         
-        static vector<int> group_models(const vector<Lambda>& hmms, int number_of_groups);
+        static vector<int> group_models(const vector<Lambda>& hmms, int number_of_groups, bool best_guess = false);
 };
 
 Lambda init_lambda();
