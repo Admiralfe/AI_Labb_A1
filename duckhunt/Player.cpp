@@ -29,7 +29,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     cerr << "Round\t" << pState.getRound()
         << "\tBirds\t" << pState.getNumBirds()
-        << "\tMove\t" << pState.getBird(0).getLastObservation()
+        << "\tMove\t" << pState.getBird(1).getLastObservation()
         << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
 
     cerr << "current time: " << current_tstep << endl;
@@ -43,10 +43,6 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
-    cerr << this->HMMs[0].A << endl;
-    cerr << this->HMMs[0].B << endl;
-    cerr << this->HMMs[0].pi << endl;
-
     int no_new_turns = pState.getNumNewTurns();
     this->current_tstep += no_new_turns;
 
@@ -59,17 +55,20 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
-    cerr << "test:" << endl;
+    /*
+    cerr << "observation sequence:" << endl;
     for (int t = 0; t < current_tstep; t++) {
-        cerr << HMMs[0].obs_seq[t] << ", ";
+        cerr << HMMs[1].obs_seq[t] << ", ";
     }
+
     cerr << endl;
-    cerr << endl;
+
     cerr << "number of observations: " << this->HMMs[0].no_obs << endl;
+    */
 
     int iters;
     //We wait some time before we start training our HMMs, to gather enough observations.
-    if (this->current_tstep == 95) {
+    if (this->current_tstep == 80) {
         for (int i = 0; i < no_birds; i++) {
             iters = hmm::model_estimate(this->HMMs[i], pDue);
         }
@@ -77,7 +76,14 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         cerr << "iterations: " << iters << endl;
     }
 
+    if (current_tstep > 80 && pState.getBird(1).isAlive()) {
+        /*cerr << this->HMMs[0].A << endl;
+        cerr << this->HMMs[0].B << endl;
+        cerr << this->HMMs[0].pi << endl;*/
 
+        int guess = hmm::next_obs_guess(this->HMMs[1]);
+        return Action(1, (EMovement) guess);
+    }
 
     // This line choose not to shoot
     return cDontShoot;
