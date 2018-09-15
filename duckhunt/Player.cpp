@@ -5,6 +5,7 @@
 #include "matrix.h"
 #include "globals.h"
 #include "../HMM/hmm.h"
+#include "classification.h"
 
 namespace ducks
 {
@@ -104,7 +105,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
     cerr << "Guessing time!" << endl << flush;
 
-    vector<int> optimal_guesses = Lambda::group_models(this->HMMs, ESpecies::COUNT_SPECIES, true);
+    vector<int> optimal_guesses = classification::group_models(this->HMMs, ESpecies::COUNT_SPECIES, true);
 
     cerr << "Guesses calculated: ";
 
