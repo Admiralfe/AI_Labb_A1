@@ -28,12 +28,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         current_tstep = 0;
     }
 
-    cerr << "Round\t" << pState.getRound()
+    /*cerr << "Round\t" << pState.getRound()
         << "\tBirds\t" << pState.getNumBirds()
         << "\tMove\t" << pState.getBird(1).getLastObservation()
         << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
 
-    cerr << "current time: " << current_tstep << endl;
+    cerr << "current time: " << current_tstep << endl;*/
     size_t no_birds = pState.getNumBirds();
 
     //Initialize an HMM for each bird on the first time step.
@@ -83,6 +83,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         cerr << this->HMMs[0].pi << endl;*/
 
         int guess = hmm::next_obs_guess(this->HMMs[1]);
+        cerr << "Shooting at " << guess << endl;
         return Action(1, (EMovement) guess);
     }
 
@@ -114,9 +115,12 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
     
     cerr << endl;
 
-    for (int i = 1; i < optimal_guesses.size(); i++)
-        lGuesses[optimal_guesses[i]] = (ESpecies)(i - 1);
+    //for (int i = 1; i < optimal_guesses.size(); i++)
+    //    lGuesses[optimal_guesses[i]] = (ESpecies)(i - 1);
     
+    for (int i = 0; i < lGuesses.size(); i++)
+        lGuesses[i] = ESpecies::SPECIES_PIGEON;
+
     return lGuesses;
 }
 
@@ -134,10 +138,21 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
      * If you made any guesses, you will find out the true species of those birds in this function.
      */
 
+    vector<bool> species_present(ESpecies::COUNT_SPECIES);
+
     cerr << "-- Actual species --" << endl;
     for (int i = 0; i < pSpecies.size(); i++)
-        if (pSpecies[i] != ESpecies::SPECIES_UNKNOWN)
+        if (pSpecies[i] != ESpecies::SPECIES_UNKNOWN) {
             cerr << "Bird " << i << " was " << pSpecies[i] << endl;
+            species_present[pSpecies[i]] = true;
+        }
+    
+    int tot = 0;
+    for (auto b : species_present)
+        if (b)
+            tot++;
+    
+    cerr << tot << " species in total" << endl;
 }
 
 

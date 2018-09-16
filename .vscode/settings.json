@@ -5,7 +5,10 @@
         "istream": "cpp",
         "*.tcc": "cpp",
         "deque": "cpp",
-        "unordered_map": "cpp"
+        "unordered_map": "cpp",
+        "array": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp"
     },
     "code-runner.executorMap": {
         "javascript": "node",

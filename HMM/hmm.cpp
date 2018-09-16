@@ -11,8 +11,7 @@
 
 #define NO_OBS 9
 #define NO_HS 6
-#define TIME_OUT -2
-#define MAX_ITERS_REACHED -1
+#define TIME_OUT -numeric_limits<number>::infinity()
 
 using namespace globals;
 using namespace std;
@@ -283,7 +282,7 @@ int hmm::model_estimate(Lambda& lambda, const Deadline& pDue, bool verbose, int 
         }
     }
 
-    return MAX_ITERS_REACHED;
+    return -iters;
 }
 
 //Comparison if two float values are within EPSILON of each other.

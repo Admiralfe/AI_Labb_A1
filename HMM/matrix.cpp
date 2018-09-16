@@ -320,6 +320,7 @@ number matrix::row_distance_squared(const matrix& other, int i1, int i2) const {
     return sum;
 }
 
+//beräkna det ungefärliga kvadrerade avståndet mellan två matriser, utan hänsyn till radnumrering
 number matrix::distance_squared(const matrix& other) const {
     assert(height == other.height);
     assert(width == other.width);
@@ -345,6 +346,55 @@ number matrix::distance_squared(const matrix& other) const {
 
         total_dist += mindist;
         left_to_check.erase(minrow);
+    }
+
+    return total_dist;
+}
+
+//beräkna det ungefärliga kvadrerade avståndet mellan två matriser, utan hänsyn till radnumrering
+//sparar radnumreringen för översättning mellan matrisernas index i reordering, vars .size() ska vara lika med this->height
+//om square_reordered_matrices så används istället elementen i reordering för att jämföra de två matriserna, som ska vara kvadratiska
+number matrix::distance_squared(const matrix& other, vector<int>& reordering, bool square_reordered_matrices) const {
+    assert(height == other.height);
+    assert(width == other.width);
+    assert(reordering.size() == height);
+
+    number total_dist = 0;
+
+    if (square_reordered_matrices) {
+        assert(width == height);
+        for (auto index : reordering)
+            assert(index >= 0 && index < width);
+        
+        number x;
+        for (int i = 0; i < height; i++)
+            for (int j = 0; j < width; j++) {
+                x = (elements[i][j] - other.elements[reordering[i]][reordering[j]]);
+                total_dist += x * x;
+            }
+    } else {
+        std::set<int> left_to_check;
+        for (int i = 0; i < height; i++)
+            left_to_check.insert(i);
+
+        for (int i = 0; i < height; i++) {
+            number mindist = numeric_limits<number>::max();
+            int minrow = -1;
+            number dist = mindist;
+
+            for (auto row : left_to_check) {
+                dist = this->row_distance_squared(other, i, row);
+                if (dist < mindist) {
+                    mindist = dist;
+                    minrow = row;
+                }
+            }
+
+            reordering[i] = minrow;
+
+            total_dist += mindist;
+            left_to_check.erase(minrow);
+        }
     }
 
     return total_dist;

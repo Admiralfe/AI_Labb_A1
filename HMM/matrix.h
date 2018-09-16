@@ -40,6 +40,7 @@ public:
     bool row_stochastic() const;
     number distance(const matrix& other, int norm = 2) const;
     number distance_squared(const matrix& other) const;
+    number distance_squared(const matrix& other, vector<int>& reordering, bool square_reordered_matrices) const;
 
 private:
     int width, height;

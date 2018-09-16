@@ -2,6 +2,7 @@
 #include <set>
 #include <algorithm>
 #include <limits>
+#include <cassert>
 
 #include "classification.h"
 #include "globals.h"
@@ -42,31 +43,40 @@ void walk_tree(vector<int>& centrality, const vector<pair<int, int>>& tree, pair
 }
 
 vector<int> classification::group_models(const vector<Lambda>& hmms, int number_of_groups, bool optimal_guess) {
-    //assert(number_of_groups > 0);
-    //assert(number_of_groups > hmms.size());
+    assert(number_of_groups > 0);
+    assert(hmms.size() > 0);
+
     if (number_of_groups > hmms.size()) {
         cerr << "Too few hmms (" << hmms.size() << " vs " << number_of_groups << ")" << endl;
-        vector<int> res;
+        vector<int> res(hmms.size());
+        for (int i = 0; i < res.size(); i++)
+            res[i] = i;
         return res;
     }
-    matrix distances(hmms.size(), hmms.size());
+    assert(number_of_groups <= hmms.size());
 
-    number distance = 0;
 
     cerr << "Calculating distances" << endl;
 
     //calculate distances between models
+    matrix distances(hmms.size(), hmms.size());
+    number distance = 0;
+    vector<int> reordering(hmms[0].B.getHeight());
+
     for (int i = 0; i < distances.getHeight(); i++) {
         for (int j = 0; j < i; j++) {
-            distance = hmms[i].A.distance_squared(hmms[j].A) + hmms[i].B.distance_squared(hmms[j].B);
+            //calculate distance in B and also the difference in state numbering
+            distance = hmms[i].B.distance_squared(hmms[j].B, reordering, false);
+            //calculate distance in A, using the calculated state renumbering
+            distance += hmms[i].A.distance_squared(hmms[j].A, reordering, true);
             distances.set(i, j, distance);
             distances.set(j, i, distance);
         }
     }
 
-    cerr << distances << endl;
+    //cerr << distances << endl;
 
-    cerr << "Calculating MST" << endl;
+    //cerr << "Calculating MST" << endl;
 
     //prim's algorithm to build a MST
     vector<pair<int, int>> tree;
@@ -99,7 +109,7 @@ vector<int> classification::group_models(const vector<Lambda>& hmms, int number_
         nodes_not_in_tree.erase(minedge.second);
     }
 
-    cerr << "Sorting MST" << endl;
+    //cerr << "Sorting MST" << endl;
     
     //sort MST edges
     sort(tree.begin(), tree.end(),
@@ -108,11 +118,16 @@ vector<int> classification::group_models(const vector<Lambda>& hmms, int number_
         }
     );
 
-    for (auto p : tree)
+    /*for (auto p : tree)
         cerr << "(" << p.first << ", " << p.second << ")" << "\t";
+    cerr << endl;*/
+
+    cerr << "Model distances: ";
+    for (auto p : tree)
+        cerr << distances.get(p.first, p.second) << "\t";
     cerr << endl;
 
-    cerr << "Pruning " << (number_of_groups - 1) << " edges from MST" << endl;
+    //cerr << "Pruning " << (number_of_groups - 1) << " edges from MST" << endl;
 
     //remove number_of_groups longest edges
     std::set<int> nodes_to_check;
@@ -125,7 +140,7 @@ vector<int> classification::group_models(const vector<Lambda>& hmms, int number_
     for (int i = 0; i < number_of_groups - 1 && tree.size() - 1 >= 0; i++)
         tree.erase(tree.begin() + tree.size() - 1);
 
-    cerr << "Assigning numbers to clusters" << endl;
+    //cerr << "Assigning numbers to clusters" << endl;
 
     //flood fill the clusters with their numbers
     vector<int> assignment(hmms.size());
@@ -137,7 +152,7 @@ vector<int> classification::group_models(const vector<Lambda>& hmms, int number_
             groupnumber++;
     }
 
-    cerr << "Group assignment: " << endl;
+    cerr << "Group assignment: ";
     for (auto number : assignment)
         cerr << number << " ";
     cerr << endl;
