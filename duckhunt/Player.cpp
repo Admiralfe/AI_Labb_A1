@@ -14,6 +14,7 @@ Player::Player()
 {
     this->current_tstep = 0;
     this->current_round = 0;
+    this->species_hmms = unordered_map<ESpecies, Lambda>(ESpecies::COUNT_SPECIES);
 }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
@@ -72,20 +73,22 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     if (this->current_tstep == 80) {
         for (int i = 0; i < no_birds; i++) {
             iters = hmm::model_estimate(this->HMMs[i], pDue);
+            //cerr << "iterations bird " << i << ": " << iters << endl;
         }
-
-        cerr << "iterations: " << iters << endl;
     }
 
-    if (current_tstep > 80 && pState.getBird(1).isAlive()) {
-        /*cerr << this->HMMs[0].A << endl;
-        cerr << this->HMMs[0].B << endl;
-        cerr << this->HMMs[0].pi << endl;*/
+    if (current_tstep > 80)
+        for (int i = 1; i < 2; i++)//i < pState.getNumBirds(); i++)
+            if (pState.getBird(i).isAlive()) {
+                /*cerr << this->HMMs[0].A << endl;
+                cerr << this->HMMs[0].B << endl;
+                cerr << this->HMMs[0].pi << endl;*/
 
-        int guess = hmm::next_obs_guess(this->HMMs[1]);
-        cerr << "Shooting at " << guess << endl;
-        return Action(1, (EMovement) guess);
-    }
+                int guess = hmm::next_obs_guess(this->HMMs[i]);
+                cerr << "Shooting at " << guess << endl;
+                return Action(i, (EMovement) guess);
+            }
+    
 
     // This line choose not to shoot
     return cDontShoot;
@@ -104,22 +107,25 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
     std::vector<ESpecies> lGuesses(pState.getNumBirds(), SPECIES_UNKNOWN);
 
-    cerr << "Guessing time!" << endl << flush;
+    if (current_round == 0)
+        for (int i = 0; i < lGuesses.size(); i++)
+            lGuesses[i] = (ESpecies)(i % ESpecies::COUNT_SPECIES);
+    else {
+        cerr << "Guessing time!" << endl << flush;
 
-    vector<int> optimal_guesses = classification::group_models(this->HMMs, ESpecies::COUNT_SPECIES, true);
+        //note that the 0th element in the vector is always 0 as the actual groups are 1 <= n <= COUNT_SPECIES
+        vector<int> optimal_guesses = classification::group_models(this->HMMs, ESpecies::COUNT_SPECIES, true);
 
-    cerr << "Guesses calculated: ";
+        cerr << "Guesses calculated: ";
 
-    for (int i : optimal_guesses)
-        cerr << i << " ";
-    
-    cerr << endl;
+        for (int i : optimal_guesses)
+            cerr << i << " ";
+        
+        cerr << endl;
 
-    //for (int i = 1; i < optimal_guesses.size(); i++)
-    //    lGuesses[optimal_guesses[i]] = (ESpecies)(i - 1);
-    
-    for (int i = 0; i < lGuesses.size(); i++)
-        lGuesses[i] = ESpecies::SPECIES_PIGEON;
+        for (int i = 1; i < optimal_guesses.size(); i++)
+            lGuesses[optimal_guesses[i]] = (ESpecies)(i - 1);
+    }
 
     return lGuesses;
 }

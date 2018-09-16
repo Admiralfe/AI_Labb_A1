@@ -6,6 +6,7 @@
 #include "Action.hpp"
 #include "../HMM/hmm.h"
 #include <vector>
+#include <unordered_map>
 
 namespace ducks
 {
@@ -74,6 +75,7 @@ public:
         int current_tstep;
         int current_round;
         vector<Lambda> HMMs;
+        unordered_map<ESpecies, Lambda> species_hmms;
 };
 
 } /*namespace ducks*/
