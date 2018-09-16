@@ -8,7 +8,8 @@
         "unordered_map": "cpp",
         "array": "cpp",
         "initializer_list": "cpp",
-        "utility": "cpp"
+        "utility": "cpp",
+        "iostream": "cpp"
     },
     "code-runner.executorMap": {
         "javascript": "node",

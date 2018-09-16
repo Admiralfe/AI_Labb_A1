@@ -134,18 +134,18 @@ void matrix::fill(const vector<number>& v) {
             this->elements[i][j] = v[offset + j];
 }
 
-matrix matrix::random_uniform(int h, int w, double variance) {
+matrix matrix::random_uniform(int h, int w, number variance) {
     matrix res = matrix(h, w);
 
     long seed = std::chrono::system_clock::now().time_since_epoch().count();
 
     default_random_engine generator(seed);
-    uniform_real_distribution<double> distribution(-variance, variance);
+    uniform_real_distribution<number> distribution(-variance, variance);
 
-    double uniform_value = 1 / (double) w;
+    number uniform_value = 1 / (number) w;
 
     for (int i = 0; i < h; i++) {
-        double current_row_sum = 0;
+        number current_row_sum = 0;
         for (int j = 0; j < w; j++) {
             //We set the last element in each row so that the matrix becomes row stochastic,
             //that is each row must sum to 1.
@@ -164,7 +164,7 @@ matrix matrix::random_uniform(int h, int w, double variance) {
             }
             else {
                 //We don't want negative values in a row stochastic matrix
-                double entry = max(0.0, uniform_value + distribution(generator));
+                number entry = max(0.0, uniform_value + distribution(generator));
                 current_row_sum += entry;
                 res.set(i, j, entry);
             }

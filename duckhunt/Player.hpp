@@ -76,6 +76,8 @@ public:
         int current_round;
         vector<Lambda> HMMs;
         unordered_map<ESpecies, Lambda> species_hmms;
+        unordered_map<ESpecies, vector<vector<int>>> backlog;
+        bool prepare_from_backlog(ESpecies species);
 };
 
 } /*namespace ducks*/

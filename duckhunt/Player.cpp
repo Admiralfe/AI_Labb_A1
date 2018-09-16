@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <algorithm>
 
 #include "Player.hpp"
 #include "matrix.h"
@@ -15,6 +16,35 @@ Player::Player()
     this->current_tstep = 0;
     this->current_round = 0;
     this->species_hmms = unordered_map<ESpecies, Lambda>(ESpecies::COUNT_SPECIES);
+    this->backlog = unordered_map<ESpecies, vector<vector<int>>>(ESpecies::COUNT_SPECIES);
+}
+
+bool Player::prepare_from_backlog(ESpecies species) {
+    if (species_hmms.find(species) == species_hmms.end()) {
+        //cerr << "Species " << species << " has no model" << endl;
+        return false;
+    }
+    if (backlog.find(species) == backlog.end()) {
+        //cerr << "Species " << species << " has no backlog" << endl;
+        return false;
+    }
+
+    if (backlog[species].size() > 0) {
+        /*cerr << "Preparing observations for " << species << ", "
+            << (backlog[species].size() - 1) << " left in backlog" << endl;*/
+        vector<int> obs_seq = backlog[species].back();
+        backlog[species].pop_back();
+        species_hmms[species].obs_seq = obs_seq;
+        species_hmms[species].no_obs = obs_seq.size();
+
+        return true;
+    } else {
+        //cerr << "Empty backlog for species " << species << endl;
+        species_hmms[species].obs_seq = vector<int>(0);
+        species_hmms[species].no_obs = 0;
+
+        return false;
+    }
 }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
@@ -43,6 +73,17 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         for (int i = 0; i < no_birds; i++) {
             this->HMMs[i] = Lambda();
         }
+
+        cerr << "Backlog: " << endl;
+        for (int i = 0; i < ESpecies::COUNT_SPECIES; i++) {
+            cerr << "Species " << i << ": ";
+            if (species_hmms.find((ESpecies) i) == species_hmms.end())
+                cerr << "No model" << endl;
+            else if (backlog.find((ESpecies) i) == backlog.end())
+                cerr << "No backlog" << endl;
+            else
+                cerr << backlog[(ESpecies) i].size() << " sequences" << endl;
+        }
     }
 
     int no_new_turns = pState.getNumNewTurns();
@@ -70,14 +111,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     int iters;
     //We wait some time before we start training our HMMs, to gather enough observations.
-    if (this->current_tstep == 80) {
+    if (current_tstep == 80) {
         for (int i = 0; i < no_birds; i++) {
             iters = hmm::model_estimate(this->HMMs[i], pDue);
             //cerr << "iterations bird " << i << ": " << iters << endl;
         }
-    }
-
-    if (current_tstep > 80)
+    } else if (current_tstep > 80) {
         for (int i = 1; i < 2; i++)//i < pState.getNumBirds(); i++)
             if (pState.getBird(i).isAlive()) {
                 /*cerr << this->HMMs[0].A << endl;
@@ -88,8 +127,18 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 cerr << "Shooting at " << guess << endl;
                 return Action(i, (EMovement) guess);
             }
+    } else {
+        //process backlog for each bird if there is one
+        if (current_round != 0) {
+            ESpecies current = (ESpecies)(current_tstep % ESpecies::COUNT_SPECIES);
+            if (prepare_from_backlog(current)) {
+                iters = hmm::model_estimate(species_hmms[current], pDue);
+                cerr << "Trained species HMM " << current << " from backlog" << endl;
+            }
+        }
+    }
+        
     
-
     // This line choose not to shoot
     return cDontShoot;
 
@@ -111,7 +160,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
         for (int i = 0; i < lGuesses.size(); i++)
             lGuesses[i] = (ESpecies)(i % ESpecies::COUNT_SPECIES);
     else {
-        cerr << "Guessing time!" << endl << flush;
+        /*cerr << "Guessing time!" << endl << flush;
 
         //note that the 0th element in the vector is always 0 as the actual groups are 1 <= n <= COUNT_SPECIES
         vector<int> optimal_guesses = classification::group_models(this->HMMs, ESpecies::COUNT_SPECIES, true);
@@ -124,8 +173,53 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
         cerr << endl;
 
         for (int i = 1; i < optimal_guesses.size(); i++)
-            lGuesses[optimal_guesses[i]] = (ESpecies)(i - 1);
+            lGuesses[optimal_guesses[i]] = (ESpecies)(i - 1);*/
+
+        vector<ESpecies> undiscovered_species;
+        for (int i = 0; i < ESpecies::COUNT_SPECIES; i++)
+            if (species_hmms.find((ESpecies) i) == species_hmms.end())
+                undiscovered_species.push_back((ESpecies) i);
+        
+        vector<pair<int, number>> total_distances(lGuesses.size());
+
+        vector<int> reordering(HMMs[0].B.getHeight());
+
+        for (int i = 0; i < lGuesses.size(); i++) {
+            number tot = 0;
+            number minimal = -1;
+            ESpecies closest = ESpecies::SPECIES_UNKNOWN;
+
+            for (int j = 0; j < ESpecies::COUNT_SPECIES; j++)
+                if (species_hmms.find((ESpecies) j) != species_hmms.end()) {
+                    //calculate distance in B and also the difference in state numbering
+                    number distance = HMMs[i].B.distance_squared(species_hmms[(ESpecies) j].B, reordering, false);
+                    //calculate distance in A, using the calculated state renumbering
+                    distance += HMMs[i].A.distance_squared(species_hmms[(ESpecies) j].A, reordering, true);
+                    
+                    if (minimal == -1 || distance <= minimal) {
+                        minimal = distance;
+                        closest = (ESpecies) j;
+                    }
+                    tot += distance;
+                }
+            
+            lGuesses[i] = closest;
+            total_distances[i] = {i, tot};
+        }
+
+        sort(total_distances.begin(), total_distances.end(),
+            [](pair<int, int> a, pair<int, int> b) {
+                return a.second < b.second;
+        });
+
+        for (int i = 0; i < undiscovered_species.size() && lGuesses.size() - i - 1 >= 0; i++)
+            lGuesses[i] = undiscovered_species[i];
     }
+
+    cerr << "Guess: " << endl;
+    for (auto i : lGuesses)
+        cerr << i << " ";
+    cerr << endl;
 
     return lGuesses;
 }
@@ -144,21 +238,30 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
      * If you made any guesses, you will find out the true species of those birds in this function.
      */
 
-    vector<bool> species_present(ESpecies::COUNT_SPECIES);
-
     cerr << "-- Actual species --" << endl;
     for (int i = 0; i < pSpecies.size(); i++)
         if (pSpecies[i] != ESpecies::SPECIES_UNKNOWN) {
-            cerr << "Bird " << i << " was " << pSpecies[i] << endl;
-            species_present[pSpecies[i]] = true;
+            //cerr << "Bird " << i << " was " << pSpecies[i] << endl;
+            cerr << pSpecies[i] << " ";
+
+            if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
+                //if we found a bird for which we have no model, make it the model of the species
+                HMMs[i].obs_seq = vector<int>(0);
+                HMMs[i].no_obs = 0;
+                species_hmms.insert(pair<ESpecies, Lambda>(pSpecies[i], HMMs[i]));
+            } else {
+                //else add its observations to the backlog
+                vector<int> trimmed_obs_seq = vector<int>(HMMs[i].no_obs);
+                for (int j = 0; j < trimmed_obs_seq.size(); j++)
+                    trimmed_obs_seq[j] = HMMs[i].obs_seq[j];
+                
+                if (backlog.find(pSpecies[i]) == backlog.end())
+                    backlog.insert(pair<ESpecies, vector<vector<int>>>(pSpecies[i], vector<vector<int>>()));
+                backlog[pSpecies[i]].push_back(trimmed_obs_seq);
+            }
         }
     
-    int tot = 0;
-    for (auto b : species_present)
-        if (b)
-            tot++;
-    
-    cerr << tot << " species in total" << endl;
+    cerr << endl;
 }
 
 

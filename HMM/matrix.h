@@ -33,7 +33,7 @@ public:
 
     static matrix parse_stdin(); 
     static vector<int> parse_intvec_stdin();
-    static matrix random_uniform(int h, int w, double variance);
+    static matrix random_uniform(int h, int w, number variance);
 
     void to_stdout() const;
 

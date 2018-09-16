@@ -10,8 +10,9 @@
 #include "matrix.h"
 
 #define NO_OBS 9
-#define NO_HS 6
+#define NO_HS 7
 #define TIME_OUT -numeric_limits<number>::infinity()
+//#define ALWAYS_ROW_STOCHASTIC
 
 using namespace globals;
 using namespace std;
@@ -38,7 +39,7 @@ Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<nu
 int hmm::next_obs_guess(Lambda& lambda) {
     int no_diff_obs = lambda.B.getWidth();
 
-    number max_log_prob = -std::numeric_limits<double>::infinity();
+    number max_log_prob = -std::numeric_limits<number>::infinity();
     number log_prob;
     int next_obs_guess = 0;
 
@@ -244,11 +245,12 @@ int hmm::model_estimate(Lambda& lambda, const Deadline& pDue, bool verbose, int 
     int iters = 0;
     int maxiters = max_iter;
 
-    number old_log_prob = -std::numeric_limits<double>::infinity();
+    number old_log_prob = -std::numeric_limits<number>::infinity();
 
     matrix alpha = hmm::a_pass(lambda, c);
     matrix beta = hmm::b_pass(lambda, c, alpha);
     hmm::reestimate(lambda, alpha, beta);
+
 
     while (iters < maxiters) {
         if (pDue.remainingMs() < 5) {
@@ -375,4 +377,56 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
         delete digamma[t];
         digamma[t] = nullptr;
     }
+
+    #ifdef ALWAYS_ROW_STOCHASTIC
+    bool A_needed = false, B_needed = false, pi_needed = false;
+    //A
+    for (int i = 0; i < no_states; i++) {
+        number sum = 0;
+        for (int j = 0; j < no_states; j++)
+            sum += lambda.A.get(i, j);
+        if (!number_equal(sum, 1)) {
+            A_needed = true;
+            cerr << "A_" << i << " needed fixing (" << sum << ")" << endl;
+            sum = 1 / sum;
+            for (int j = 0; j < no_states; j++)
+                lambda.A.set(i, j, lambda.A.get(i, j) * sum);
+        }
+    }
+    //B
+    for (int i = 0; i < no_states; i++) {
+        number sum = 0;
+        for (int j = 0; j < lambda.B.getWidth(); j++)
+            sum += lambda.B.get(i, j);
+        if (!number_equal(sum, 1)) {
+            B_needed = true;
+            cerr << "B_" << i << " needed fixing (" << sum << ")" << endl;
+            sum = 1 / sum;
+            for (int j = 0; j < lambda.B.getWidth(); j++)
+                lambda.B.set(i, j, lambda.B.get(i, j) * sum);
+        }
+    }
+    //pi
+    {
+        number sum = 0;
+        for (int j = 0; j < lambda.pi.size(); j++)
+            sum += lambda.pi[j];
+        if (!number_equal(sum, 1)) {
+            pi_needed = true;
+            cerr << "pi needed fixing (" << sum << ")" << endl;
+            sum = 1 / sum;
+            for (int j = 0; j < lambda.pi.size(); j++)
+                lambda.pi[j] *= sum;
+        }
+    }
+
+    if (A_needed)
+        cerr << "A is now" << endl << lambda.A << endl;
+        
+    if (B_needed)
+        cerr << "B is now" << endl << lambda.B << endl;
+        
+    if (pi_needed)
+        cerr << "pi is now" << endl << lambda.pi << endl;
+    #endif
 }
