@@ -11,7 +11,7 @@
 
 #define NO_OBS 9
 #define NO_HS 7
-#define TIME_OUT -numeric_limits<number>::infinity()
+#define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
 
 using namespace globals;
@@ -36,10 +36,14 @@ Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<nu
     obs_seq = observations;
 }
 
-int hmm::next_obs_guess(Lambda& lambda) {
+/*
+ * Returns the most likely next observation given a model lambda and a current observation sequence.
+ * max_log_prob will be set to the probability of that most likely observation upon function return.
+ */
+int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob) {
     int no_diff_obs = lambda.B.getWidth();
 
-    number max_log_prob = -std::numeric_limits<number>::infinity();
+    max_log_prob = -std::numeric_limits<number>::infinity();
     number log_prob;
     int next_obs_guess = 0;
 

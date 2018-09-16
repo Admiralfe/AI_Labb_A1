@@ -75,8 +75,8 @@ public:
         int current_tstep;
         int current_round;
         vector<Lambda> HMMs;
-        unordered_map<ESpecies, Lambda> species_hmms;
-        unordered_map<ESpecies, vector<vector<int>>> backlog;
+        unordered_map<ESpecies , Lambda, std::hash<int>> species_hmms;
+        unordered_map<ESpecies, vector<vector<int>>, std::hash<int>> backlog;
         bool prepare_from_backlog(ESpecies species);
 };
 

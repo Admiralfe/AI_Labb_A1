@@ -3,10 +3,10 @@
 #include <algorithm>
 
 #include "Player.hpp"
-#include "matrix.h"
-#include "globals.h"
+#include "../HMM/matrix.h"
+#include "../HMM/globals.h"
 #include "../HMM/hmm.h"
-#include "classification.h"
+#include "../HMM/classification.h"
 
 namespace ducks
 {
@@ -15,8 +15,8 @@ Player::Player()
 {
     this->current_tstep = 0;
     this->current_round = 0;
-    this->species_hmms = unordered_map<ESpecies, Lambda>(ESpecies::COUNT_SPECIES);
-    this->backlog = unordered_map<ESpecies, vector<vector<int>>>(ESpecies::COUNT_SPECIES);
+    this->species_hmms = unordered_map<ESpecies, Lambda, std::hash<int>>(ESpecies::COUNT_SPECIES);
+    this->backlog = unordered_map<ESpecies, vector<vector<int>>, std::hash<int>>(ESpecies::COUNT_SPECIES);
 }
 
 bool Player::prepare_from_backlog(ESpecies species) {
@@ -109,6 +109,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     cerr << "number of observations: " << this->HMMs[0].no_obs << endl;
     */
 
+    cerr << "time: " << current_tstep << endl;
+
     int iters;
     //We wait some time before we start training our HMMs, to gather enough observations.
     if (current_tstep == 80) {
@@ -116,17 +118,30 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             iters = hmm::model_estimate(this->HMMs[i], pDue);
             //cerr << "iterations bird " << i << ": " << iters << endl;
         }
-    } else if (current_tstep > 80) {
-        for (int i = 1; i < 2; i++)//i < pState.getNumBirds(); i++)
+    } else if (current_tstep > 80 && pState.getRound() != 0) { //Only want to train on first round.
+        //Pick a bird that is alive and is the bird with the maximum probability to shoot.
+        number log_prob = 0;
+        number max_log_prob = -std::numeric_limits<number>::infinity();
+        int bird = 0;
+        int guess = 0;
+        for (int i = 1; i < pState.getNumBirds(); i++) {
+            int candidate_guess;
             if (pState.getBird(i).isAlive()) {
                 /*cerr << this->HMMs[0].A << endl;
                 cerr << this->HMMs[0].B << endl;
                 cerr << this->HMMs[0].pi << endl;*/
 
-                int guess = hmm::next_obs_guess(this->HMMs[i]);
-                cerr << "Shooting at " << guess << endl;
-                return Action(i, (EMovement) guess);
+                candidate_guess = hmm::next_obs_guess(this->HMMs[i], log_prob);
+                if (log_prob > max_log_prob) {
+                    guess = candidate_guess;
+                    max_log_prob = log_prob;
+                    bird = i;
+                }
             }
+        }
+        cerr << "Shooting at " << guess << endl;
+
+        return Action(bird, (EMovement) guess);
     } else {
         //process backlog for each bird if there is one
         if (current_round != 0) {
