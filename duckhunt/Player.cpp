@@ -32,6 +32,7 @@ bool Player::prepare_from_backlog(ESpecies species) {
     if (backlog[species].size() > 0) {
         /*cerr << "Preparing observations for " << species << ", "
             << (backlog[species].size() - 1) << " left in backlog" << endl;*/
+        species_hmms[species].pi = matrix::random_uniform(1, species_hmms[species].pi.size(), 0.1).get_row(0);
         vector<int> obs_seq = backlog[species].back();
         backlog[species].pop_back();
         species_hmms[species].obs_seq = obs_seq;
@@ -54,6 +55,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
      * This skeleton never shoots.
      */
 
+
     if (current_round != pState.getRound()) {
         current_round = pState.getRound();
         current_tstep = 0;
@@ -66,6 +68,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     cerr << "current time: " << current_tstep << endl;*/
     size_t no_birds = pState.getNumBirds();
+
+    cerr << "Birds: " << pState.getNumBirds() << endl;
 
     //Initialize an HMM for each bird on the first time step.
     if (this->current_tstep == 0) {
@@ -111,22 +115,34 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     cerr << "time: " << current_tstep << endl;
 
-    int iters;
     //We wait some time before we start training our HMMs, to gather enough observations.
-    if (current_tstep == 80) {
+    /*if (current_tstep == 80) {
         for (int i = 0; i < no_birds; i++) {
             iters = hmm::model_estimate(this->HMMs[i], pDue);
             //cerr << "iterations bird " << i << ": " << iters << endl;
         }
-    } else if (current_tstep > 80 && pState.getRound() != 0) { //Only want to train on first round.
+
+    } else*/ if (current_tstep > 100 - pState.getNumBirds()) {//&& pState.getRound() != 0) { //Only want to train on first round.
+
+        cerr << "Estimating model parameters..." << endl;
+        for (int i = 0; i < no_birds; i++) {
+            if (pState.getBird(i).isAlive()) {
+                hmm::model_estimate(this->HMMs[i], pDue);
+            }
+        }
+
         //Pick a bird that is alive and is the bird with the maximum probability to shoot.
         number log_prob = 0;
+        number prob_sum = 0;
         number max_log_prob = -std::numeric_limits<number>::infinity();
-        int bird = 0;
-        int guess = 0;
-        for (int i = 1; i < pState.getNumBirds(); i++) {
+
+        int bird = -1;
+        int guess = -1;
+
+        cerr << "Picking most likely bird" << endl;
+        for (int i = 4; i < pState.getNumBirds(); i++) {
             int candidate_guess;
-            if (pState.getBird(i).isAlive()) {
+            if (pState.getBird(i).isAlive() && i != 10) {
                 /*cerr << this->HMMs[0].A << endl;
                 cerr << this->HMMs[0].B << endl;
                 cerr << this->HMMs[0].pi << endl;*/
@@ -138,28 +154,28 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     bird = i;
                 }
             }
-        }
-        cerr << "Shooting at " << guess << endl;
 
+            this->HMMs[i].reset();
+        }
+
+        cerr << "Shooting at " << bird << " in direction " << guess << " with probability " << exp(max_log_prob) << endl;
         return Action(bird, (EMovement) guess);
     } else {
         //process backlog for each bird if there is one
         if (current_round != 0) {
             ESpecies current = (ESpecies)(current_tstep % ESpecies::COUNT_SPECIES);
             if (prepare_from_backlog(current)) {
-                iters = hmm::model_estimate(species_hmms[current], pDue);
+                hmm::model_estimate(species_hmms[current], pDue);
                 cerr << "Trained species HMM " << current << " from backlog" << endl;
             }
         }
     }
-        
     
     // This line choose not to shoot
     return cDontShoot;
 
     //This line would predict that bird 0 will move right and shoot at it
     //return Action(0, MOVE_RIGHT);
-
 }
 
 std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDue)
@@ -244,6 +260,8 @@ void Player::hit(const GameState &pState, int pBird, const Deadline &pDue)
     /*
      * If you hit the bird you are trying to shoot, you will be notified through this function.
      */
+
+
     std::cerr << "HIT BIRD!!!" << std::endl;
 }
 

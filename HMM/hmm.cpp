@@ -36,6 +36,13 @@ Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<nu
     obs_seq = observations;
 }
 
+//Resets the model parameters of lambda to random_uniform values but keeps the observation sequence.
+void Lambda::reset() {
+    A = matrix::random_uniform(NO_HS, NO_HS, 0.1);
+    B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
+    pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
+}
+
 /*
  * Returns the most likely next observation given a model lambda and a current observation sequence.
  * max_log_prob will be set to the probability of that most likely observation upon function return.
@@ -52,13 +59,12 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob) {
     //Iterate through the possible next observations
     for (int obs = 0; obs < no_diff_obs; obs++) {
         log_prob = 0;
-
         vector<number> c = vector<number>(lambda.no_obs + 1);
 
         //Add next observation guess to the sequence
         lambda.obs_seq[lambda.no_obs] = obs;
         lambda.no_obs++;
-        hmm::a_pass(lambda, c);
+        matrix alpha_normed = hmm::a_pass(lambda, c);
         //Compute log probability and pick maximum probability one.
         for (int i = 0; i < lambda.no_obs; i++) {
             log_prob += log(c[i]);
@@ -77,6 +83,24 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob) {
     }
 
     return next_obs_guess;
+}
+
+number obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in) {
+    number log_prob = 0;
+
+    vector<int> prev_obs_seq = lambda.obs_seq;
+    lambda.obs_seq = obs_seq_in;
+    vector<number> c = vector<number>(lambda.no_obs);
+
+    hmm::a_pass(lambda, c);
+
+    for (int i = 0; i < lambda.no_obs; i++) {
+        log_prob += log(c[i]);
+    }
+
+    lambda.obs_seq = prev_obs_seq;
+
+    return exp(log_prob);
 }
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
