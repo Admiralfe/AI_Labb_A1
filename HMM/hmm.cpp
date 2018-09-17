@@ -10,7 +10,7 @@
 #include "matrix.h"
 
 #define NO_OBS 9
-#define NO_HS 7
+#define NO_HS 10
 #define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
 
@@ -47,12 +47,15 @@ void Lambda::reset() {
  * Returns the most likely next observation given a model lambda and a current observation sequence.
  * max_log_prob will be set to the probability of that most likely observation upon function return.
  */
-int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob) {
+int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
     int no_diff_obs = lambda.B.getWidth();
 
+    number norm_factor = 0;
     max_log_prob = -std::numeric_limits<number>::infinity();
     number log_prob;
     int next_obs_guess = 0;
+
+    number prob_sum_test = 0;
 
     //cerr << "In next_obs_guess: " << lambda.obs_seq[lambda.no_obs - 1] << endl;
 
@@ -72,6 +75,8 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob) {
 
         log_prob = -log_prob;
 
+        norm_factor += exp(log_prob);
+
         //cerr << "current (log) probability: " << log_prob << endl;
         //cerr << "max (log) probability: " << max_log_prob << endl;
         if (log_prob > max_log_prob) {
@@ -81,6 +86,8 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob) {
 
         lambda.no_obs--;
     }
+
+    prob = exp(max_log_prob) / norm_factor;
 
     return next_obs_guess;
 }

@@ -122,7 +122,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             //cerr << "iterations bird " << i << ": " << iters << endl;
         }
 
-    } else*/ if (current_tstep > 100 - pState.getNumBirds()) {//&& pState.getRound() != 0) { //Only want to train on first round.
+    } else*/ if (current_tstep > 100 - pState.getNumBirds() - 10) {//&& pState.getRound() != 0) { //Only want to train on first round.
 
         cerr << "Estimating model parameters..." << endl;
         for (int i = 0; i < no_birds; i++) {
@@ -135,6 +135,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         number log_prob = 0;
         number prob_sum = 0;
         number max_log_prob = -std::numeric_limits<number>::infinity();
+        number prob = 0;
+        number max_prob = 0;
 
         int bird = -1;
         int guess = -1;
@@ -146,20 +148,33 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 /*cerr << this->HMMs[0].A << endl;
                 cerr << this->HMMs[0].B << endl;
                 cerr << this->HMMs[0].pi << endl;*/
-
-                candidate_guess = hmm::next_obs_guess(this->HMMs[i], log_prob);
+                candidate_guess = hmm::next_obs_guess(this->HMMs[i], log_prob, prob);
+                cerr << "probability: " << prob << endl;
+                cerr << "log_prob : " << log_prob << endl;
                 if (log_prob > max_log_prob) {
                     guess = candidate_guess;
                     max_log_prob = log_prob;
                     bird = i;
+                    max_prob = prob;
                 }
-            }
 
+                prob_sum += prob;
+            }
+        }
+
+        cerr << endl << "maximum probability: " << max_prob << endl;
+        cerr << endl << "maximum log probability: " << log_prob << endl;
+
+        for (int i = 0; i < no_birds; i++) {
             this->HMMs[i].reset();
         }
 
-        cerr << "Shooting at " << bird << " in direction " << guess << " with probability " << exp(max_log_prob) << endl;
-        return Action(bird, (EMovement) guess);
+        if (max_prob > 0.6) {
+            cerr << "Shooting at " << bird << " in direction " << guess << " with probability " << max_prob << endl;
+            return Action(bird, (EMovement) guess);
+        } else {
+            return cDontShoot;
+        }
     } else {
         //process backlog for each bird if there is one
         if (current_round != 0) {

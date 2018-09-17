@@ -26,7 +26,7 @@ Lambda init_lambda();
 
 class hmm {
     public:
-        static int next_obs_guess(Lambda& lambda, number& prob);
+        static int next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob);
         static matrix a_pass(const Lambda& lambda, vector<number>& c);
         static matrix b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha);
         static vector<int> viterbi(const Lambda& lambda);
