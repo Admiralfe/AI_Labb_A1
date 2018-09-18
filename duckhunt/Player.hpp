@@ -4,9 +4,10 @@
 #include "Deadline.hpp"
 #include "GameState.hpp"
 #include "Action.hpp"
-#include "../HMM/hmm.h"
+#include "hmm.h"
 #include <vector>
 #include <unordered_map>
+#include <set>
 
 namespace ducks
 {
@@ -76,6 +77,10 @@ public:
         int current_round;
         vector<Lambda> HMMs;
         unordered_map<ESpecies , Lambda, std::hash<int>> species_hmms;
+        set<int> shot_once;
+        set<int> shot_twice;
+        int shots;
+        int hits;
 };
 
 } /*namespace ducks*/
