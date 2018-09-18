@@ -120,7 +120,7 @@ matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
 
     //cerr << "XD " << seq_length << endl;
     
-    #ifdef SAFETY_OFF_HMM
+    #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);
@@ -168,7 +168,7 @@ matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& 
     int no_states = lambda.A.getHeight();
     int seq_length = lambda.no_obs;
 
-    #ifdef SAFETY_OFF_HMM
+    #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);
@@ -219,7 +219,7 @@ vector<int> hmm::viterbi(const Lambda& lambda) {
     int no_states = lambda.A.getHeight();
     int seq_length = lambda.no_obs;
 
-    #ifdef SAFETY_OFF_HMM
+    #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);
@@ -341,7 +341,7 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
     int no_states = lambda.A.getHeight();
     int seq_length = lambda.no_obs;
 
-    #ifdef SAFETY_OFF_HMM
+    #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);

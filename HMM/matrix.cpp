@@ -19,7 +19,7 @@ using namespace globals;
 //#define SAFETY_OFF_MATRIX
 
 matrix::matrix(int height, int width){
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(height >= 1 && width >= 1);
     #endif
     this->height = height;
@@ -33,7 +33,7 @@ matrix::matrix(int height, int width){
 }
 
 vector<number> matrix::operator *(const vector<number>& v) {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(v.size() == this->width);
     #endif
 
@@ -53,7 +53,7 @@ vector<number> matrix::operator *(const vector<number>& v) {
 }
 
 matrix matrix::operator*(const matrix& m) {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(this->width == m.height);
     #endif
 
@@ -84,7 +84,7 @@ matrix matrix::operator *(number x) {
     return res;
 }
 matrix matrix::operator +(const matrix& m) {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(m.height == this->height);
     assert(m.width == this->width);
     #endif
@@ -97,7 +97,7 @@ matrix matrix::operator +(const matrix& m) {
     return res;
 }
 matrix matrix::operator -(const matrix& m) {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(m.height == this->height);
     assert(m.width == this->width);
     #endif
@@ -129,21 +129,21 @@ bool matrix::row_stochastic() const {
 }
 
 number matrix::get(int i, int j) const {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(i >= 0 && i < height && j >= 0 && j < width);
     #endif
     return this->elements[i][j];
 }
 
 void matrix::set(int i, int j, number element) {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(i >= 0 && i < height && j >= 0 && j < width);
     #endif
     this->elements[i][j] = element;
 }
 
 void matrix::fill(const vector<number>& v) {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(v.size() == width * height);
     #endif
 
@@ -298,7 +298,7 @@ void matrix::to_stdout() const {
 
 //use -1 for infinity norm
 number matrix::distance(const matrix& other, int norm) const {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(this->height == other.height);
     assert(this->width == other.width);
     #endif
@@ -342,7 +342,7 @@ number matrix::row_distance_squared(const matrix& other, int i1, int i2) const {
 
 //beräkna det ungefärliga kvadrerade avståndet mellan två matriser, utan hänsyn till radnumrering
 number matrix::distance_squared(const matrix& other) const {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(height == other.height);
     assert(width == other.width);
     #endif
@@ -377,7 +377,7 @@ number matrix::distance_squared(const matrix& other) const {
 //sparar radnumreringen för översättning mellan matrisernas index i reordering, vars .size() ska vara lika med this->height
 //om square_reordered_matrices så används istället elementen i reordering för att jämföra de två matriserna, som ska vara kvadratiska
 number matrix::distance_squared(const matrix& other, vector<int>& reordering, bool square_reordered_matrices) const {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(height == other.height);
     assert(width == other.width);
     assert(reordering.size() == height);
@@ -386,7 +386,7 @@ number matrix::distance_squared(const matrix& other, vector<int>& reordering, bo
     number total_dist = 0;
 
     if (square_reordered_matrices) {
-        #ifdef SAFETY_OFF_MATRIX
+        #ifndef SAFETY_OFF_MATRIX
         assert(width == height);
         for (auto index : reordering)
             assert(index >= 0 && index < width);
@@ -443,7 +443,7 @@ ostream& operator<< (ostream& outs, const vector<int>& v) {
 }
 
 number operator *(const vector<number>& a, const vector<number>& b) {
-    #ifdef SAFETY_OFF_MATRIX
+    #ifndef SAFETY_OFF_MATRIX
     assert(a.size() == b.size());
     #endif
 
