@@ -16,36 +16,6 @@ Player::Player()
     this->current_tstep = 0;
     this->current_round = 0;
     this->species_hmms = unordered_map<ESpecies, Lambda, std::hash<int>>(ESpecies::COUNT_SPECIES);
-    this->backlog = unordered_map<ESpecies, vector<vector<int>>, std::hash<int>>(ESpecies::COUNT_SPECIES);
-}
-
-bool Player::prepare_from_backlog(ESpecies species) {
-    if (species_hmms.find(species) == species_hmms.end()) {
-        //cerr << "Species " << species << " has no model" << endl;
-        return false;
-    }
-    if (backlog.find(species) == backlog.end()) {
-        //cerr << "Species " << species << " has no backlog" << endl;
-        return false;
-    }
-
-    if (backlog[species].size() > 0) {
-        /*cerr << "Preparing observations for " << species << ", "
-            << (backlog[species].size() - 1) << " left in backlog" << endl;*/
-        species_hmms[species].pi = matrix::random_uniform(1, species_hmms[species].pi.size(), 0.1).get_row(0);
-        vector<int> obs_seq = backlog[species].back();
-        backlog[species].pop_back();
-        species_hmms[species].obs_seq = obs_seq;
-        species_hmms[species].no_obs = obs_seq.size();
-
-        return true;
-    } else {
-        //cerr << "Empty backlog for species " << species << endl;
-        species_hmms[species].obs_seq = vector<int>(0);
-        species_hmms[species].no_obs = 0;
-
-        return false;
-    }
 }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
@@ -59,6 +29,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     if (current_round != pState.getRound()) {
         current_round = pState.getRound();
         current_tstep = 0;
+        cerr << "Round start" << endl;
+        cerr << "--Species HMMs--" << endl;
+
+        for (pair<ESpecies, Lambda> p : species_hmms) {
+            cerr << "Observations for " << p.first << ": " << p.second.no_obs << "/" << p.second.obs_seq.size() << endl;
+        }
     }
 
     /*cerr << "Round\t" << pState.getRound()
@@ -76,17 +52,6 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         this->HMMs = vector<Lambda>(no_birds);
         for (int i = 0; i < no_birds; i++) {
             this->HMMs[i] = Lambda();
-        }
-
-        cerr << "Backlog: " << endl;
-        for (int i = 0; i < ESpecies::COUNT_SPECIES; i++) {
-            cerr << "Species " << i << ": ";
-            if (species_hmms.find((ESpecies) i) == species_hmms.end())
-                cerr << "No model" << endl;
-            else if (backlog.find((ESpecies) i) == backlog.end())
-                cerr << "No backlog" << endl;
-            else
-                cerr << backlog[(ESpecies) i].size() << " sequences" << endl;
         }
     }
 
@@ -176,13 +141,11 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             return cDontShoot;
         }
     } else {
-        //process backlog for each bird if there is one
+        //train species models
         if (current_round != 0) {
             ESpecies current = (ESpecies)(current_tstep % ESpecies::COUNT_SPECIES);
-            if (prepare_from_backlog(current)) {
+            if (species_hmms.find(current) != species_hmms.end())
                 hmm::model_estimate(species_hmms[current], pDue);
-                cerr << "Trained species HMM " << current << " from backlog" << endl;
-            }
         }
     }
     
@@ -294,22 +257,28 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
 
             if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
                 //if we found a bird for which we have no model, make it the model of the species
-                HMMs[i].obs_seq = vector<int>(0);
-                HMMs[i].no_obs = 0;
+                vector<int> trimmed(HMMs[i].no_obs);
+                for (int j = 0; j < trimmed.size() && HMMs[i].obs_seq[j] != -1; j++)
+                    trimmed[j] = HMMs[i].obs_seq[j];
+                
+                HMMs[i].obs_seq = trimmed;
+                HMMs[i].no_obs = trimmed.size();
                 species_hmms.insert(pair<ESpecies, Lambda>(pSpecies[i], HMMs[i]));
             } else {
-                //else add its observations to the backlog
-                vector<int> trimmed_obs_seq = vector<int>(HMMs[i].no_obs);
-                for (int j = 0; j < trimmed_obs_seq.size(); j++)
-                    trimmed_obs_seq[j] = HMMs[i].obs_seq[j];
+                //else add its observations to the existing model
+                int actualLength = 0;
+                while (actualLength < HMMs[i].no_obs && HMMs[i].obs_seq[actualLength] != -1)
+                    actualLength++;
                 
-                if (backlog.find(pSpecies[i]) == backlog.end())
-                    backlog.insert(pair<ESpecies, vector<vector<int>>>(pSpecies[i], vector<vector<int>>()));
-                backlog[pSpecies[i]].push_back(trimmed_obs_seq);
+                species_hmms[pSpecies[i]].obs_seq.insert(
+                    species_hmms[pSpecies[i]].obs_seq.end(),
+                    HMMs[i].obs_seq.begin(),
+                    HMMs[i].obs_seq.begin() + actualLength);
+                species_hmms[pSpecies[i]].no_obs += actualLength;
             }
         }
     
-    cerr << endl;
+    //cerr << endl;
 }
 
 

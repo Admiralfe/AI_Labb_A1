@@ -76,8 +76,6 @@ public:
         int current_round;
         vector<Lambda> HMMs;
         unordered_map<ESpecies , Lambda, std::hash<int>> species_hmms;
-        unordered_map<ESpecies, vector<vector<int>>, std::hash<int>> backlog;
-        bool prepare_from_backlog(ESpecies species);
 };
 
 } /*namespace ducks*/
