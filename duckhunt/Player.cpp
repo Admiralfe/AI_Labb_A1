@@ -127,6 +127,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     mixed_model.pi = species_hmms[(ESpecies) spec].pi;
                     mixed_model.obs_seq = HMMs[i].obs_seq;
                     mixed_model.no_obs = HMMs[i].no_obs;
+                    for (int j = 0; j < c.size(); j++)
+                        c[j] = 0;
 
                     hmm::a_pass(mixed_model, c);
                     number log_sum = 0;
@@ -355,6 +357,9 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
                 mixed_model.pi = species_hmms[(ESpecies) spec].pi;
                 mixed_model.obs_seq = HMMs[i].obs_seq;
                 mixed_model.no_obs = HMMs[i].no_obs;
+
+                for (int j = 0; j < c.size(); j++)
+                    c[j] = 0;
 
                 hmm::a_pass(mixed_model, c);
                 number log_sum = 0;

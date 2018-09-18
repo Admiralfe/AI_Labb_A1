@@ -13,7 +13,7 @@
 #define NO_HS 11
 #define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
-//#define SAFETY_OFF_HMM
+#define SAFETY_OFF_HMM
 
 using namespace globals;
 using namespace std;

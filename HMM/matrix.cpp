@@ -16,7 +16,7 @@
 
 using namespace globals;
 
-//#define SAFETY_OFF_MATRIX
+#define SAFETY_OFF_MATRIX
 
 matrix::matrix(int height, int width){
     #ifndef SAFETY_OFF_MATRIX
