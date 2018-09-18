@@ -90,17 +90,18 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             //cerr << "iterations bird " << i << ": " << iters << endl;
         }
 
-    } else */if (current_tstep > 100 - pState.getNumBirds() && pState.getRound() > 1) { //Only want to train on first two rounds
+    } else */if (current_tstep > 100 - pState.getNumBirds() 
+                && pState.getRound() > 1
+                && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) { //Only want to train on first two rounds
         //cerr << "Estimating model parameters..." << endl;
         
-        vector<tuple<ESpecies, number, int>> most_probable(no_birds);
+        vector<tuple<ESpecies, number, int, number>> most_probable(no_birds);
         for (int i = 0; i < no_birds; i++) {
+            most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity(), i, numeric_limits<number>::infinity()};
 
             if (pState.getBird(i).isAlive()) {
                 hmm::model_estimate(this->HMMs[i], pDue, false, 20);
                 vector<number> c(HMMs[i].no_obs);
-
-                most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity(), i };
                 
                 //cerr << "Probability for different species" << endl;
                 for (int spec = 0; spec < ESpecies::COUNT_SPECIES; spec++) {
@@ -120,9 +121,21 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                         log_sum -= log(c[j]);
 
                     //cerr << spec << ": " << log_sum << endl;
+                    if ((ESpecies) spec == ESpecies::SPECIES_BLACK_STORK)
+                        most_probable[i] = {
+                            get<0>(most_probable[i]),
+                            get<1>(most_probable[i]),
+                            get<2>(most_probable[i]),
+                            log_sum
+                        };
 
                     if (!isnan(log_sum) && log_sum > get<1>(most_probable[i]))
-                        most_probable[i] = {(ESpecies) spec, log_sum, i};
+                        most_probable[i] = {
+                            (ESpecies) spec,
+                            log_sum,
+                            i,
+                            get<3>(most_probable[i])
+                        };
                 }
             }
         }
@@ -133,23 +146,32 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         cerr << endl;
 
         sort(most_probable.begin(), most_probable.end(),
-            [](tuple<ESpecies, number, int> a, tuple<ESpecies, number, int> b) {
-                return get<1>(a) < get<1>(b);
+            [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
+                return isnan(get<3>(b)) || get<3>(a) < get<3>(b);
         });
+
+        cerr << "most_probable (sorted):" << endl;
+        for (auto p : most_probable)
+            cerr << get<0>(p) << "\t" << get<1>(p) << "\t" << get<2>(p) << "\t" << get<3>(p) << "\t" << endl;
 
         int bird = -1;
         EMovement movement = EMovement::MOVE_DEAD;
 
-        for (int i = no_birds - 1; i >= 0; i--) {
+        number a, b;
+
+        for (int i = 0; i < most_probable.size(); i++) {
             auto tup = most_probable[i];
             if (pState.getBird(get<2>(tup)).isAlive()
                     && get<0>(tup) != ESpecies::SPECIES_BLACK_STORK
                     && get<0>(tup) != ESpecies::SPECIES_UNKNOWN
                     /*&& most_probable[i].second > något threshold*/) {
-                cerr << "Shooting at what we believe is a " << get<0>(tup) << endl;
+                for (int j = 0; j < get<2>(tup); j++)
+                    cerr << "  ";
+                cerr << "^" << endl;
+                
+                cerr << "Shooting at " << get<2>(tup) << ", which we believe is a " << get<0>(tup) << endl;
                 bird = get<2>(tup);
 
-                number a, b;
                 /*Lambda mixed_model;
                 mixed_model.A = species_hmms[(ESpecies) most_probable[i].first].A;
                 mixed_model.B = species_hmms[(ESpecies) most_probable[i].first].B;
@@ -196,7 +218,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             this->HMMs[i].reset();
         }
 
-        if (bird != -1) {
+        if (bird != -1 && b > 0.5) {
             cerr << "Shooting at " << bird << " in direction " << movement << endl;
             return Action(bird, movement);
         } else {
