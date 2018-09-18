@@ -47,10 +47,10 @@ void Lambda::reset() {
  * Returns the most likely next observation given a model lambda and a current observation sequence.
  * max_log_prob will be set to the probability of that most likely observation upon function return.
  */
-int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, long double& prob) {
+int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
     int no_diff_obs = lambda.B.getWidth();
 
-    long double norm_factor = 0;
+    number norm_factor = 0;
     max_log_prob = -std::numeric_limits<number>::infinity();
     number log_prob;
     int next_obs_guess = 0;
@@ -80,13 +80,13 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, long double& prob)
             max_log_prob = log_prob;
         }
 
+        norm_factor += exp(log_prob);
+
         //This effectively removes the added observation guess from obs_seq.
         lambda.no_obs--;
     }
 
-    prob = max_log_prob - hmm::obs_seq_prob(lambda, lambda.obs_seq);
-
-    prob = exp(prob);
+    prob = exp(max_log_prob) / norm_factor;
 
     return next_obs_guess;
 }
@@ -108,7 +108,7 @@ number hmm::obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in) {
 
     lambda.obs_seq = prev_obs_seq;
 
-    return log_prob;
+    return exp(log_prob);
 }
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq

@@ -81,14 +81,13 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     cerr << "time: " << current_tstep << endl;
 
     //We wait some time before we start training our HMMs, to gather enough observations.
-    /*if (current_tstep == 80) {
+    /*if (current_tstep == 100 - pState.getNumBirds()) {
         for (int i = 0; i < no_birds; i++) {
-            iters = hmm::model_estimate(this->HMMs[i], pDue);
+            hmm::model_estimate(this->HMMs[i], pDue);
             //cerr << "iterations bird " << i << ": " << iters << endl;
         }
 
-    } else*/ if (current_tstep > 100 - pState.getNumBirds() - 10) {//&& pState.getRound() != 0) { //Only want to train on first round.
-
+    } else */if (current_tstep > 100 - pState.getNumBirds() && pState.getRound() != 0) { //Only want to train on first round.
         cerr << "Estimating model parameters..." << endl;
         for (int i = 0; i < no_birds; i++) {
             if (pState.getBird(i).isAlive()) {
@@ -100,8 +99,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         number log_prob = 0;
         number prob_sum = 0;
         number max_log_prob = -std::numeric_limits<number>::infinity();
-        long double prob = 0;
-        long double max_prob = 0;
+        number prob = 0;
+        number max_prob = 0;
 
         int bird = -1;
         int guess = -1;
@@ -116,14 +115,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 candidate_guess = hmm::next_obs_guess(this->HMMs[i], log_prob, prob);
                 cerr << "probability: " << prob << endl ;
                 cerr << "log_prob : " << log_prob << endl << endl;
-                if (log_prob > max_log_prob) {
+                if (prob > max_prob) {
                     guess = candidate_guess;
                     max_log_prob = log_prob;
                     bird = i;
                     max_prob = prob;
                 }
-
-                prob_sum += prob;
             }
         }
 
@@ -135,7 +132,6 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
 
         if (max_prob > 0.5) {
-            cerr << "Shooting at " << bird << " in direction " << guess << " with probability " << max_prob << endl;
             return Action(bird, (EMovement) guess);
         } else {
             return cDontShoot;
