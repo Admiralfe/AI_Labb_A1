@@ -10,7 +10,8 @@
         "initializer_list": "cpp",
         "utility": "cpp",
         "iostream": "cpp",
-        "limits": "cpp"
+        "limits": "cpp",
+        "tuple": "cpp"
     },
     "code-runner.executorMap": {
         "javascript": "node",
