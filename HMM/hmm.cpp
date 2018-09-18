@@ -47,21 +47,19 @@ void Lambda::reset() {
  * Returns the most likely next observation given a model lambda and a current observation sequence.
  * max_log_prob will be set to the probability of that most likely observation upon function return.
  */
-int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
+int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, long double& prob) {
     int no_diff_obs = lambda.B.getWidth();
 
-    number norm_factor = 0;
+    long double norm_factor = 0;
     max_log_prob = -std::numeric_limits<number>::infinity();
     number log_prob;
     int next_obs_guess = 0;
-
-    number prob_sum_test = 0;
+    prob = 0;
 
     //cerr << "In next_obs_guess: " << lambda.obs_seq[lambda.no_obs - 1] << endl;
 
     //Iterate through the possible next observations
     for (int obs = 0; obs < no_diff_obs; obs++) {
-        log_prob = 0;
         vector<number> c = vector<number>(lambda.no_obs + 1);
 
         //Add next observation guess to the sequence
@@ -69,13 +67,11 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
         lambda.no_obs++;
         matrix alpha_normed = hmm::a_pass(lambda, c);
         //Compute log probability and pick maximum probability one.
+        log_prob = 0;
         for (int i = 0; i < lambda.no_obs; i++) {
             log_prob += log(c[i]);
         }
-
         log_prob = -log_prob;
-
-        norm_factor += exp(log_prob);
 
         //cerr << "current (log) probability: " << log_prob << endl;
         //cerr << "max (log) probability: " << max_log_prob << endl;
@@ -84,15 +80,18 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
             max_log_prob = log_prob;
         }
 
+        //This effectively removes the added observation guess from obs_seq.
         lambda.no_obs--;
     }
 
-    prob = exp(max_log_prob) / norm_factor;
+    prob = max_log_prob - hmm::obs_seq_prob(lambda, lambda.obs_seq);
+
+    prob = exp(prob);
 
     return next_obs_guess;
 }
 
-number obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in) {
+number hmm::obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in) {
     number log_prob = 0;
 
     vector<int> prev_obs_seq = lambda.obs_seq;
@@ -105,9 +104,11 @@ number obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in) {
         log_prob += log(c[i]);
     }
 
+    log_prob = -log_prob;
+
     lambda.obs_seq = prev_obs_seq;
 
-    return exp(log_prob);
+    return log_prob;
 }
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
