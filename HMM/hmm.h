@@ -3,7 +3,7 @@
 
 #include "globals.h"
 #include "matrix.h"
-#include "../duckhunt/Deadline.hpp"
+#include "Deadline.hpp"
 
 using namespace globals;
 using namespace ducks;
