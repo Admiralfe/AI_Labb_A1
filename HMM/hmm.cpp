@@ -13,6 +13,7 @@
 #define NO_HS 11
 #define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
+//#define SAFETY_OFF_HMM
 
 using namespace globals;
 using namespace std;
@@ -119,6 +120,7 @@ matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
 
     //cerr << "XD " << seq_length << endl;
     
+    #ifdef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);
@@ -126,6 +128,7 @@ matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
     assert(c.size() == seq_length);
     assert(lambda.A.row_stochastic());
     assert(lambda.B.row_stochastic());
+    #endif
 
     c = vector<number>(seq_length);
 
@@ -165,6 +168,7 @@ matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& 
     int no_states = lambda.A.getHeight();
     int seq_length = lambda.no_obs;
 
+    #ifdef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);
@@ -174,6 +178,7 @@ matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& 
     assert(alpha.getWidth() == seq_length);
     assert(lambda.A.row_stochastic());
     assert(lambda.B.row_stochastic());
+    #endif
 
     mat beta = mat(no_states, seq_length);
 
@@ -214,10 +219,12 @@ vector<int> hmm::viterbi(const Lambda& lambda) {
     int no_states = lambda.A.getHeight();
     int seq_length = lambda.no_obs;
 
+    #ifdef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);
     assert(seq_length > 0);
+    #endif
 
     //Use logarithms for entries to avoid underflows
     matrix log_delta = mat(no_states, seq_length);
@@ -334,6 +341,7 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
     int no_states = lambda.A.getHeight();
     int seq_length = lambda.no_obs;
 
+    #ifdef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
     assert(lambda.B.getHeight() == no_states);
     assert(lambda.pi.size() == no_states);
@@ -344,6 +352,7 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
     assert(beta.getWidth() == seq_length);
     assert(lambda.A.row_stochastic());
     assert(lambda.B.row_stochastic());
+    #endif
 
     matrix gamma = matrix(no_states, seq_length); //indexed gamma.get(i, t)
     vector<matrix*> digamma = vector<matrix*>(seq_length); //indexed digamma[t].get(i, j)

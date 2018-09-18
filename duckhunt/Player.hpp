@@ -81,6 +81,7 @@ public:
         set<int> shot_twice;
         int shots;
         int hits;
+        clock_t roundTimer;
 };
 
 } /*namespace ducks*/

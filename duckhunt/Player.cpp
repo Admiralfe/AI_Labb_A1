@@ -32,6 +32,9 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     if (current_round != pState.getRound()) {
         current_round = pState.getRound();
         current_tstep = 0;
+        if (current_round != 0)
+            cerr << "Previous round took " << ((double) (clock() - roundTimer) / CLOCKS_PER_SEC * 1000.0) << "ms" << endl;
+        roundTimer = clock();
         cerr << "Round " << current_round << endl;
         //cerr << "--Species HMMs--" << endl;
 
