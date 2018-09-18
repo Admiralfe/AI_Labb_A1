@@ -168,8 +168,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 for (int j = 0; j < get<2>(tup); j++)
                     cerr << "  ";
                 cerr << "^" << endl;
-                
-                cerr << "Shooting at " << get<2>(tup) << ", which we believe is a " << get<0>(tup) << endl;
+
+                //cerr << "Shooting at " << get<2>(tup) << ", which we believe is a " << get<0>(tup) << endl;
                 bird = get<2>(tup);
 
                 /*Lambda mixed_model;
@@ -217,6 +217,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         for (int i = 0; i < no_birds; i++) {
             this->HMMs[i].reset();
         }
+
+        cerr << "probability of hitting: " << b << endl;
 
         if (bird != -1 && b > 0.5) {
             cerr << "Shooting at " << bird << " in direction " << movement << endl;
