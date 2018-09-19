@@ -10,7 +10,11 @@
 #include "matrix.h"
 
 #define NO_OBS 9
+<<<<<<< HEAD
 #define NO_HS 4
+=======
+#define NO_HS 3
+>>>>>>> fe9a97e8f04024b09931d9e7a8342e2386f76653
 #define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
 #define SAFETY_OFF_HMM
@@ -356,6 +360,35 @@ int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observatio
     return -iters;
 }
 
+/*
+ * Overloaded version of model_estimate, which uses multiple independent observation sequences which are thought to
+ * belong to the same model.
+ */
+void hmm::model_estimate(Lambda& lambda, const vector<pair<vector<int>, int>>& observations, bool verbose, int max_iter) {
+    vector<number> c = vector<number>(observations[0].second);
+    int iters = 0;
+    int maxiters = max_iter;
+    int no_states = lambda.A.getWidth();
+    int no_obs = lambda.B.getWidth();
+
+    while (iters < maxiters) {
+
+        for (int k = 0; k < observations.size(); k++) {
+            matrix alpha = hmm::a_pass(lambda, c, observations[k]);
+            matrix beta = hmm::b_pass(lambda, c, alpha, observations[k]);
+            Lambda new_iter_model = hmm::single_model_estimate(lambda, alpha, beta, observations[k]);
+            lambda.A = lambda.A + new_iter_model.A;
+            lambda.B = lambda.B + new_iter_model.B;
+
+            for (int i = 0; i < no_states; i++) {
+                lambda.pi[i] += (1 / (double) observations.size()) * new_iter_model.pi[i];
+            }
+        }
+
+        iters++;
+    }
+}
+
 //Comparison if two float values are within EPSILON of each other.
 bool number_equal(number a, number b) {
     return abs(a - b) < EPSILON;
@@ -501,4 +534,147 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta, co
     if (pi_needed)
         cerr << "pi is now" << endl << lambda.pi << endl;
     #endif
+}
+
+Lambda hmm::mult_seq_estimate(Lambda& lambda, const matrix& alpha, const matrix& beta, const vector<pair<vector<int>, int>>& observations) {
+    int no_states = lambda.A.getHeight();
+    int seq_length = observations.second;
+
+    Lambda res = Lambda();
+
+#ifndef SAFETY_OFF_HMM
+    assert(lambda.A.getWidth() == no_states);
+    assert(lambda.B.getHeight() == no_states);
+    assert(lambda.pi.size() == no_states);
+    assert(seq_length > 0);
+    assert(alpha.getHeight() == no_states);
+    assert(alpha.getWidth() == seq_length);
+    assert(beta.getHeight() == no_states);
+    assert(beta.getWidth() == seq_length);
+    assert(lambda.A.row_stochastic());
+    assert(lambda.B.row_stochastic());
+#endif
+
+    matrix gamma = matrix(no_states, seq_length); //indexed gamma.get(i, t)
+    vector<matrix*> digamma = vector<matrix*>(seq_length); //indexed digamma[t].get(i, j)
+    number denom;
+
+    for (int t = 0; t < seq_length - 1; t++) {
+        denom = 0;
+        digamma[t] = new matrix(no_states, no_states);
+
+        for (int i = 0; i < no_states; i++)
+            for (int j = 0; j < no_states; j++)
+                denom += alpha.get(i, t) * lambda.A.get(i, j) * lambda.B.get(j, observations.first[t + 1]) * beta.get(j, t + 1);
+
+        for (int i = 0; i < no_states; i++) {
+            for (int j = 0; j < no_states; j++) {
+                digamma[t]->set(i, j, alpha.get(i, t) * lambda.A.get(i, j)
+                                      * lambda.B.get(j, observations.first[t + 1]) * beta.get(j, t + 1) / denom);
+                gamma.set(i, t, gamma.get(i, t) + digamma[t]->get(i, j));
+            }
+        }
+    }
+
+    denom = 0;
+    for (int i = 0; i < no_states; i++)
+        denom += alpha.get(i, seq_length - 1);
+
+    for (int i = 0; i < no_states; i++)
+        gamma.set(i, seq_length - 1, alpha.get(i, seq_length - 1) / denom);
+
+    //re-estimate A, B and pi
+
+    //pi
+    for (int i = 0; i < no_states; i++)
+        res.pi[i] = gamma.get(i, 0);
+
+    //A
+    number numer;
+    for (int i = 0; i < no_states; i++) {
+        for (int j = 0; j < no_states; j++) {
+            numer = 0;
+            denom = 0;
+
+            for (int t = 0; t < seq_length - 1; t++) {
+                numer += digamma[t]->get(i, j);
+                denom += gamma.get(i, t);
+            }
+
+            res.A.set(i, j, numer / denom);
+        }
+    }
+
+    //B
+    for (int i = 0; i < no_states; i++) {
+        for (int j = 0; j < lambda.B.getWidth(); j++) {
+            numer = 0;
+            denom = 0;
+
+            for (int t = 0; t < seq_length; t++) {
+                if (observations.first[t] == j)
+                    numer += gamma.get(i, t);
+                denom += gamma.get(i, t);
+            }
+            res.B.set(i, j, numer / denom);
+        }
+    }
+
+    for (int t = 0; t < seq_length; t++) {
+        delete digamma[t];
+        digamma[t] = nullptr;
+    }
+
+    return res;
+#ifdef ALWAYS_ROW_STOCHASTIC
+    bool A_needed = false, B_needed = false, pi_needed = false;
+    //A
+    for (int i = 0; i < no_states; i++) {
+        number sum = 0;
+        for (int j = 0; j < no_states; j++)
+            sum += lambda.A.get(i, j);
+        if (!number_equal(sum, 1)) {
+            A_needed = true;
+            cerr << "A_" << i << " needed fixing (" << sum << ")" << endl;
+            sum = 1 / sum;
+            for (int j = 0; j < no_states; j++)
+                lambda.A.set(i, j, lambda.A.get(i, j) * sum);
+        }
+    }
+    //B
+    for (int i = 0; i < no_states; i++) {
+        number sum = 0;
+        for (int j = 0; j < lambda.B.getWidth(); j++)
+            sum += lambda.B.get(i, j);
+        if (!number_equal(sum, 1)) {
+            B_needed = true;
+            cerr << "B_" << i << " needed fixing (" << sum << ")" << endl;
+            sum = 1 / sum;
+            for (int j = 0; j < lambda.B.getWidth(); j++)
+                lambda.B.set(i, j, lambda.B.get(i, j) * sum);
+        }
+    }
+    //pi
+    {
+        number sum = 0;
+        for (int j = 0; j < lambda.pi.size(); j++)
+            sum += lambda.pi[j];
+        if (!number_equal(sum, 1)) {
+            pi_needed = true;
+            cerr << "pi needed fixing (" << sum << ")" << endl;
+            sum = 1 / sum;
+            for (int j = 0; j < lambda.pi.size(); j++)
+                lambda.pi[j] *= sum;
+        }
+    }
+
+    if (A_needed)
+        cerr << "A is now" << endl << lambda.A << endl;
+
+    if (B_needed)
+        cerr << "B is now" << endl << lambda.B << endl;
+
+    if (pi_needed)
+        cerr << "pi is now" << endl << lambda.pi << endl;
+#endif
 }

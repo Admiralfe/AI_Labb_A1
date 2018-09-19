@@ -29,6 +29,8 @@ class hmm {
         static matrix b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha, const pair<vector<int>, int>& observations);
         static vector<int> viterbi(const Lambda& lambda, const pair<vector<int>, int>& observations);
         static void reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta, const pair<vector<int>, int>& observations);
+        static Lambda mult_seq_estimate(Lambda& lambda, const matrix& alpha, const matrix& beta, const vector<pair<vector<int>, int>>& observations);
+        static void model_estimate(Lambda& lambda, const vector<pair<vector<int>, int>>& observations, bool verbose, int max_iter);
         static int model_estimate(Lambda& lambda,  const pair<vector<int>, int>& observations, bool verbose = false, int max_iter = MAX_ITERS);
 };
 

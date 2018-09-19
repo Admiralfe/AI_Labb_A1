@@ -22,6 +22,8 @@
 #endif
 
 #define OBS_SEQ_INITIAL_SIZE 1000
+#define OBS_SEQ_SIZE 100
+#define NO_OBS_SEQS_INITIAL 10
 #define SAFETY_FACTOR 0.6
 
 namespace ducks
@@ -175,7 +177,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             if (species_hmms.find(current) != species_hmms.end())
                 hmm::model_estimate(
                     species_hmms[current],
-                    species_total_observations[current],
+                    species_observations[current],
                     false,
                     6 - (current_round / 2)
                 );
@@ -254,7 +256,7 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
 {
     int storks = 0;
     cerr << "Actual species:" << endl;
-    for (int i = 0; i < pSpecies.size(); i++)
+    for (int i = 0; i < pSpecies.size(); i++) {
         if (pSpecies[i] != ESpecies::SPECIES_UNKNOWN) {
             //cerr << "Bird " << i << " was " << pSpecies[i] << endl;
             cerr << pSpecies[i] << " ";
@@ -262,6 +264,20 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
             if (pSpecies[i] == ESpecies::SPECIES_BLACK_STORK)
                 storks++;
 
+            if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
+                species_hmms.insert({pSpecies[i], Lambda()});
+                vector<pair<vector<int>, int>> observation_holder = vector<pair<vector<int>, int>>();
+                species_observations.insert({pSpecies[i], observation_holder});
+            }
+
+            species_observations[pSpecies[i]].push_back({vector<int>(OBS_SEQ_SIZE), 0});
+            int obs_seq_index = species_observations[pSpecies[i]].size() - 1;
+
+            for (int t = 0; t < observations[i].second; t++) {
+                species_observations[pSpecies[i]][obs_seq_index].first[t] = observations[i].first[t];
+                species_observations[pSpecies[i]][obs_seq_index].second++;
+            }
+            /*
             //add a species model if there is none
             if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
                 species_hmms.insert({pSpecies[i], Lambda()});
@@ -278,14 +294,16 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
                     vector<int> v(species_total_observations[pSpecies[i]].first.size() + OBS_SEQ_INITIAL_SIZE);
                     for (int j = 0; j < offset + actualLength; j++)
                         v[j] = species_total_observations[pSpecies[i]].first[j];
-                    
+
                     species_total_observations[pSpecies[i]].first = v;
                 }
             }
-            species_total_observations[pSpecies[i]].second += actualLength;
+             */
+            //species_total_observations[pSpecies[i]].second += actualLength;
 
             species_hmms[pSpecies[i]].reset();
         }
+    }
     cerr << endl;
     cerr << storks << " black stork" << (storks == 1 ? "" : "s") << endl;
     cerr << "So far hit " << hits << " of " << shots << " shot" << (shots == 1 ? "" : "s") << endl;

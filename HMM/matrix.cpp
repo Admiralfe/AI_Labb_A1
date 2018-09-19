@@ -83,6 +83,7 @@ matrix matrix::operator *(number x) {
     
     return res;
 }
+
 matrix matrix::operator +(const matrix& m) {
     #ifndef SAFETY_OFF_MATRIX
     assert(m.height == this->height);

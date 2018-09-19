@@ -85,6 +85,7 @@ public:
         vector<pair<vector<int>, int>> observations;
         unordered_map<ESpecies, Lambda, std::hash<int>> species_hmms;
         unordered_map<ESpecies, pair<vector<int>, int>, std::hash<int>> species_total_observations;
+        unordered_map<ESpecies, vector<pair<vector<int>, int>>, std::hash<int>> species_observations;
         set<int> shot_once;
         set<int> shot_twice;
         int shots;
