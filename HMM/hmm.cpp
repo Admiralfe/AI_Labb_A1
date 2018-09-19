@@ -44,7 +44,7 @@ void Lambda::reset() {
  * Returns the most likely next observation given a model lambda and a current observation sequence.
  * max_log_prob will be set to the probability of that most likely observation upon function return.
  */
-int hmm::next_obs_guess(const Lambda& lambda, pair<vector<int>, int>& observations, number& max_log_prob) {
+/*int hmm::next_obs_guess(const Lambda& lambda, pair<vector<int>, int>& observations, number& max_log_prob) {
     int no_diff_obs = lambda.B.getWidth();
 
     number norm_factor = 0;
@@ -84,6 +84,7 @@ int hmm::next_obs_guess(const Lambda& lambda, pair<vector<int>, int>& observatio
 
     return next_obs_guess;
 }
+ */
 
 int hmm::next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& observations, number& max_prob) {
     int no_diff_obs = lambda.B.getWidth();

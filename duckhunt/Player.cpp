@@ -128,7 +128,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             }
         }
 
-        cerr << "an/nan " << an << "/" << nan << " ";
+        //cerr << "an/nan " << an << "/" << nan << " ";
 
         sort(most_probable.begin(), most_probable.end(),
             [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
