@@ -3,10 +3,8 @@
 
 #include "globals.h"
 #include "matrix.h"
-#include "Deadline.hpp"
 
 using namespace globals;
-using namespace ducks;
 
 class Lambda {
     public:
@@ -27,12 +25,13 @@ Lambda init_lambda();
 class hmm {
     public:
         static number obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in);
+        static int next_obs_guess(Lambda& lambda, number& prob);
         static int next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob);
         static matrix a_pass(const Lambda& lambda, vector<number>& c);
         static matrix b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha);
         static vector<int> viterbi(const Lambda& lambda);
         static void reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta);
-        static int model_estimate(Lambda& lambda,  const Deadline& pDue, bool verbose = false, int max_iter = MAX_ITERS);
+        static int model_estimate(Lambda& lambda, bool verbose = false, int max_iter = MAX_ITERS);
 };
 
 bool number_equal(number a, number b);

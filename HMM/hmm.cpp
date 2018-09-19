@@ -92,6 +92,49 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
     return next_obs_guess;
 }
 
+int hmm::next_obs_guess(Lambda& lambda, number& max_prob) {
+    int no_diff_obs = lambda.B.getWidth();
+    int no_states = lambda.A.getWidth();
+
+    int next_obs_guess = 0;
+    number prob;
+    max_prob = 0;
+
+    //cerr << "In next_obs_guess: " << lambda.obs_seq[lambda.no_obs - 1] << endl;
+
+    //Iterate through the possible next observations
+    for (int obs = 0; obs < no_diff_obs; obs++) {
+        vector<number> c = vector<number>(lambda.no_obs + 1);
+
+        prob = 0;
+
+        //Add next observation guess to the sequence
+        //lambda.obs_seq[lambda.no_obs] = obs;
+        //lambda.no_obs++;
+        matrix alpha_normed = hmm::a_pass(lambda, c);
+
+        for (int i = 0; i < no_states; i++) {
+            number inner = 0;
+            for (int j = 0; j < no_states; j++) {
+                inner += lambda.A.get(j, i) * alpha_normed.get(j ,lambda.no_obs - 1);
+            }
+
+            //cerr << "inner sum: " << inner << endl;
+            prob += lambda.B.get(i, obs) * inner;
+        }
+
+        if (prob > max_prob && !isnan(prob)) {
+            next_obs_guess = obs;
+            max_prob = prob;
+        }
+
+        //This effectively removes the added observation guess from obs_seq.
+        //lambda.no_obs--;
+    }
+
+    return next_obs_guess;
+}
+
 number hmm::obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in) {
     number log_prob = 0;
 
@@ -283,7 +326,7 @@ vector<int> hmm::viterbi(const Lambda& lambda) {
     return res;
 }
 
-int hmm::model_estimate(Lambda& lambda, const Deadline& pDue, bool verbose, int max_iter) {
+int hmm::model_estimate(Lambda& lambda, bool verbose, int max_iter) {
     vector<number> c = vector<number>(lambda.no_obs);
     int iters = 0;
     int maxiters = max_iter;
@@ -296,9 +339,6 @@ int hmm::model_estimate(Lambda& lambda, const Deadline& pDue, bool verbose, int 
 
 
     while (iters < maxiters) {
-        if (pDue.remainingMs() < 5) {
-            return TIME_OUT;
-        }
         iters++;
         number log_prob = 0;
 

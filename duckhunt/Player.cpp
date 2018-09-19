@@ -1,13 +1,23 @@
+#define FELIX_EFTERBLIVNA_CLION
+
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
 
+#ifdef FELIX_EFTERBLIVNA_CLION
+#include "Player.hpp"
+#include "../HMM/matrix.h"
+#include "../HMM/globals.h"
+#include "../HMM/hmm.h"
+#include "../HMM/classification.h"
+#else
 #include "Player.hpp"
 #include "matrix.h"
 #include "globals.h"
 #include "hmm.h"
 #include "classification.h"
+#endif
 
 namespace ducks
 {
@@ -98,13 +108,13 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     //cerr << endl;
 
     //We wait some time before we start training our HMMs, to gather enough observations.
-    /*if (current_tstep == 100 - pState.getNumBirds()) {
+    /* if (current_tstep == 100 - pState.getNumBirds() && pState.getRound() > 1) {
         for (int i = 0; i < no_birds; i++) {
-            hmm::model_estimate(this->HMMs[i], pDue);
+            hmm::model_estimate(this->HMMs[i], false, 30);
             //cerr << "iterations bird " << i << ": " << iters << endl;
         }
 
-    } else */if (current_tstep > 100 - pState.getNumBirds() 
+    } else */ if (current_tstep > 100 - pState.getNumBirds()
                 && pState.getRound() > 1
                 && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) { //Only want to train on first two rounds
         //cerr << "Estimating model parameters..." << endl;
@@ -114,7 +124,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity(), i, numeric_limits<number>::infinity()};
 
             if (pState.getBird(i).isAlive()) {
-                hmm::model_estimate(this->HMMs[i], pDue, false, 20);
+                hmm::model_estimate(this->HMMs[i], false, 20);
                 vector<number> c(HMMs[i].no_obs);
                 
                 //cerr << "Probability for different species" << endl;
@@ -173,7 +183,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         int bird = -1;
         EMovement movement = EMovement::MOVE_DEAD;
 
-        number a, b;
+        number a, prob;
 
         for (int i = 0; i < most_probable.size(); i++) {
             auto tup = most_probable[i];
@@ -195,8 +205,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 mixed_model.pi = species_hmms[(ESpecies) most_probable[i].first].pi;
                 mixed_model.obs_seq = HMMs[i].obs_seq;
                 mixed_model.no_obs = HMMs[i].no_obs;*/
-                movement = (EMovement) hmm::next_obs_guess(HMMs[get<2>(tup)], a, b);
-                if (b < 0.5)
+                movement = (EMovement) hmm::next_obs_guess(HMMs[get<2>(tup)], prob);
+                if (prob < 0.5)
                     continue;
                 else
                     break;
@@ -238,7 +248,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             this->HMMs[i].reset();
         }
 
-        if (bird != -1 && b > 0.5) {
+        if (bird != -1 && prob > 0.5) {
             if (shot_once.find(bird) != shot_once.end()) {
                 shot_once.erase(bird);
                 shot_twice.insert(bird);
@@ -259,7 +269,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         if (current_round != 0) {
             ESpecies current = (ESpecies)(current_tstep % ESpecies::COUNT_SPECIES);
             if (species_hmms.find(current) != species_hmms.end())
-                hmm::model_estimate(species_hmms[current], pDue, false, 10 - (current_round / 2));
+                hmm::model_estimate(species_hmms[current], false, 10 - (current_round / 2));
         }
     }
     
@@ -342,7 +352,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
         
         vector<pair<ESpecies, number>> most_probable(lGuesses.size());
         for (int i = 0; i < lGuesses.size(); i++) {
-            hmm::model_estimate(this->HMMs[i], pDue);
+            hmm::model_estimate(this->HMMs[i]);
             vector<number> c(HMMs[i].no_obs);
 
             most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity() };
