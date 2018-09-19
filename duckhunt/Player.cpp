@@ -1,10 +1,10 @@
-//#define FELIX_EFTERBLIVNA_CLION
-
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
 #include <cassert>
+
+#define FELIX_EFTERBLIVNA_CLION
 
 #ifdef FELIX_EFTERBLIVNA_CLION
 #include "Player.hpp"
@@ -12,6 +12,7 @@
 #include "../HMM/globals.h"
 #include "../HMM/hmm.h"
 #include "../HMM/classification.h"
+
 #else
 #include "Player.hpp"
 #include "matrix.h"
@@ -89,6 +90,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 for (int spec = 0; spec < ESpecies::COUNT_SPECIES; spec++) {
                     if (species_hmms.find((ESpecies) spec) == species_hmms.end())
                         continue;
+                    /*
                     for (int j = 0; j < c.size(); j++)
                         c[j] = 0;
 
@@ -101,6 +103,9 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                         nan++;
                     else
                         an++;
+                        */
+
+                    number log_sum = hmm::obs_seq_prob(species_hmms[(ESpecies) spec], observations[i]);
 
                     //cerr << spec << ": " << log_sum << endl;
                     if ((ESpecies) spec == ESpecies::SPECIES_BLACK_STORK)

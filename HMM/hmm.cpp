@@ -136,7 +136,7 @@ number hmm::obs_seq_prob(const Lambda& lambda, const pair<vector<int>, int>& obs
 
     log_prob = -log_prob;
 
-    return exp(log_prob);
+    return log_prob;
 }
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq

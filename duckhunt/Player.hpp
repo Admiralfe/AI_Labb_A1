@@ -1,10 +1,17 @@
-#ifndef _DUCKS_PLAYER_HPP_
-#define _DUCKS_PLAYER_HPP_
+#ifndef _DUCKS_PLAYER_HPP
+#define _DUCKS_PLAYER_HPP
 
 #include "Deadline.hpp"
 #include "GameState.hpp"
 #include "Action.hpp"
+
+#define FELIX_EFTERBLIVNA_CLION_H
+#ifdef FELIX_EFTERBLIVNA_CLION_H
+#include "../HMM/hmm.h"
+#else
 #include "hmm.h"
+#endif
+
 #include <vector>
 #include <unordered_map>
 #include <set>
