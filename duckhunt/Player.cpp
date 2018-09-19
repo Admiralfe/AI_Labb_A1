@@ -97,7 +97,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     for (int j = 0; j < c.size(); j++)
                         c[j] = 0;
 
-                    hmm::a_pass(species_hmms[(ESpecies) spec], c, observations[i]);
+                    delete hmm::a_pass(species_hmms[(ESpecies) spec], c, observations[i]);
                     number log_sum = 0;
                     
                     for (int j = 0; j < c.size(); j++)
@@ -218,7 +218,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
                 for (int j = 0; j < c.size(); j++)
                     c[j] = 0;
 
-                hmm::a_pass(species_hmms[(ESpecies) spec], c, observations[i]);
+                delete hmm::a_pass(species_hmms[(ESpecies) spec], c, observations[i]);
                 number log_sum = 0;
                 
                 for (int j = 0; j < c.size(); j++)
