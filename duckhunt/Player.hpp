@@ -90,6 +90,7 @@ public:
         int shots;
         int hits;
         clock_t roundTimer;
+        clock_t start;
 };
 
 } /*namespace ducks*/
