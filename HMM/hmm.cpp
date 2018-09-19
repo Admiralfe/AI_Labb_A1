@@ -104,7 +104,7 @@ int hmm::next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& obse
         for (int i = 0; i < no_states; i++) {
             number inner = 0;
             for (int j = 0; j < no_states; j++) {
-                inner += lambda.A.get(j, i) * alpha_normed.get(j ,observations.second - 1);
+                inner += lambda.A.get(j, i) * alpha_normed.get(j, observations.second - 1);
             }
 
             //cerr << "inner sum: " << inner << endl;

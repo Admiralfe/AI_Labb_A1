@@ -50,9 +50,9 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         observations = vector<pair<vector<int>, int>>(pState.getNumBirds());
         for (int i = 0; i < observations.size(); i++)
             observations[i] = { vector<int>(100), 0 };
-        for (auto p : species_total_observations)
-            for (int i = 0; i < p.second.second; i++)
-                assert(p.second.first[i] != -1);
+        //for (auto p : species_total_observations)
+        //    for (int i = 0; i < p.second.second; i++)
+        //        assert(p.second.first[i] != -1);
     }
 
     size_t no_birds = pState.getNumBirds();
@@ -71,10 +71,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     }
     
     if (current_tstep > 100 - (pState.getNumBirds() * 1.5)
-                //Only want to train on first two rounds
-                && pState.getRound() > 1
-                && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) {
+            //Only want to train on first two rounds
+            && pState.getRound() > 1
+            && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) {
         //cerr << "Estimating model parameters..." << endl;
+        int nan = 0;
+        int an = 0;
         
         vector<tuple<ESpecies, number, int, number>> most_probable(no_birds);
         for (int i = 0; i < no_birds; i++) {
@@ -95,6 +97,10 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     
                     for (int j = 0; j < c.size(); j++)
                         log_sum -= log(c[j]);
+                    if (isnan(log_sum))
+                        nan++;
+                    else
+                        an++;
 
                     //cerr << spec << ": " << log_sum << endl;
                     if ((ESpecies) spec == ESpecies::SPECIES_BLACK_STORK)
@@ -115,12 +121,13 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 }
             }
         }
-        cerr << "sorting,";
+
+        cerr << "an/nan " << an << "/" << nan << " ";
+
         sort(most_probable.begin(), most_probable.end(),
             [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
-                return isnan(get<3>(b)) || get<3>(a) < get<3>(b);
+                return (!isnan(get<3>(a)) && isnan(get<3>(b))) || get<3>(a) < get<3>(b);
         });
-        cerr << "finding,";
 
         int bird = -1;
         EMovement movement = EMovement::MOVE_DEAD;
@@ -180,7 +187,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     species_hmms[current],
                     species_total_observations[current],
                     false,
-                    10 - (current_round / 2)
+                    6 - (current_round / 2)
                 );
         }
     }

@@ -11,7 +11,8 @@
         "utility": "cpp",
         "iostream": "cpp",
         "limits": "cpp",
-        "tuple": "cpp"
+        "tuple": "cpp",
+        "ostream": "cpp"
     },
     "code-runner.executorMap": {
         "javascript": "node",
