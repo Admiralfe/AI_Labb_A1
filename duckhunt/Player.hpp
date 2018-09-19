@@ -76,6 +76,7 @@ public:
         int current_tstep;
         int current_round;
         vector<Lambda> HMMs;
+        vector<pair<vector<int>, int>> observations;
         unordered_map<ESpecies , Lambda, std::hash<int>> species_hmms;
         set<int> shot_once;
         set<int> shot_twice;

@@ -11,8 +11,6 @@ class Lambda {
         matrix A;
         matrix B;
         vector<number> pi;
-        vector<int> obs_seq;
-        int no_obs;
 
         void reset();
 
