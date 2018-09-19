@@ -75,7 +75,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
-    if (current_tstep > 100 - (pState.getNumBirds() * 0.75 / SAFETY_FACTOR)
+    if (current_tstep > 60//100 - (pState.getNumBirds() * 0.75 / SAFETY_FACTOR)
             //Only want to train on first two rounds
             && pState.getRound() > 1
             && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) {
@@ -129,7 +129,10 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
         sort(most_probable.begin(), most_probable.end(),
             [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
-                return (!isnan(get<3>(a)) && isnan(get<3>(b))) || get<3>(a) < get<3>(b);
+                if (isinf(get<1>(a)) && isinf(get<1>(b)))
+                    return get<1>(a) > get<1>(b);
+                else
+                    return (!isnan(get<3>(a)) && isnan(get<3>(b))) || get<3>(a) < get<3>(b);
         });
 
         int bird = -1;
@@ -142,12 +145,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             if (pState.getBird(get<2>(tup)).isAlive()
                     && get<0>(tup) != ESpecies::SPECIES_BLACK_STORK
                     && get<0>(tup) != ESpecies::SPECIES_UNKNOWN
-                    && shot_twice.find(get<2>(tup)) == shot_twice.end()
+                    //&& shot_twice.find(get<2>(tup)) == shot_twice.end()
                     /*&& most_probable[i].second > något threshold*/) {
                 
                 bird = get<2>(tup);
                 movement = (EMovement) hmm::next_obs_guess(species_hmms[get<0>(tup)], observations[get<2>(tup)], prob);
-                
+
                 if (prob < SAFETY_FACTOR)
                     continue;
                 else
@@ -180,7 +183,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     species_hmms[current],
                     species_observations[current],
                     false,
-                    6 - (current_round / 2)
+                    8 - (current_round / 2)
                 );
         }
     }

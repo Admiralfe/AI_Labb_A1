@@ -10,7 +10,7 @@
 #include "matrix.h"
 
 #define NO_OBS 9
-#define NO_HS 4
+#define NO_HS 3
 #define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
 #define SAFETY_OFF_HMM
