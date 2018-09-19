@@ -1,4 +1,4 @@
-#define FELIX_EFTERBLIVNA_CLION
+//#define FELIX_EFTERBLIVNA_CLION
 
 #include <cstdlib>
 #include <iostream>
@@ -19,6 +19,8 @@
 #include "classification.h"
 #endif
 
+#define OBS_SEQ_INITIAL_SIZE 1000
+
 namespace ducks
 {
 
@@ -27,18 +29,13 @@ Player::Player()
     this->current_tstep = -1;
     this->current_round = -1;
     this->species_hmms = unordered_map<ESpecies, Lambda, std::hash<int>>(ESpecies::COUNT_SPECIES);
+    this->species_total_observations = unordered_map<ESpecies, pair<vector<int>, int>, std::hash<int>>(ESpecies::COUNT_SPECIES);
     this->shots = 0;
     this->hits = 0;
 }
 
 Action Player::shoot(const GameState &pState, const Deadline &pDue)
 {
-    /*
-     * Here you should write your clever algorithms to get the best action.
-     * This skeleton never shoots.
-     */
-
-
     if (current_round != pState.getRound()) {
         current_round = pState.getRound();
         current_tstep = 0;
@@ -46,33 +43,15 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             cerr << "Previous round took " << ((double) (clock() - roundTimer) / CLOCKS_PER_SEC * 1000.0) << "ms" << endl;
         roundTimer = clock();
         cerr << "Round " << current_round << endl;
-        //cerr << "--Species HMMs--" << endl;
 
         shot_once = set<int>();
         shot_twice = set<int>();
-
-        /*for (pair<ESpecies, Lambda> p : species_hmms) {
-            cerr << "Observations for " << p.first << ": " << p.second.no_obs << "/" << p.second.obs_seq.size() << endl;
-        }*/
+        observations = vector<pair<vector<int>, int>>(pState.getNumBirds());
+        for (int i = 0; i < observations.size(); i++)
+            observations[i] = { vector<int>(100), 0 };
     }
 
-    /*cerr << "Round\t" << pState.getRound()
-        << "\tBirds\t" << pState.getNumBirds()
-        << "\tMove\t" << pState.getBird(1).getLastObservation()
-        << "\tNew turns\t" << pState.getNumNewTurns() << endl << flush;
-
-    cerr << "current time: " << current_tstep << endl;*/
     size_t no_birds = pState.getNumBirds();
-
-    //cerr << "Birds: " << pState.getNumBirds() << endl;
-
-    //Initialize an HMM for each bird on the first time step.
-    if (this->current_tstep == 0) {
-        this->HMMs = vector<Lambda>(no_birds);
-        for (int i = 0; i < no_birds; i++) {
-            this->HMMs[i] = Lambda();
-        }
-    }
 
     int no_new_turns = pState.getNumNewTurns();
     this->current_tstep += no_new_turns;
@@ -81,42 +60,16 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
     for (int i = 0; i < no_birds; i++) {
         for (int t = current_tstep - 1; t >= current_tstep - no_new_turns; t--) {
             if (pState.getBird(i).getObservation(t) != EMovement::MOVE_DEAD) {
-                this->HMMs[i].obs_seq[t] = pState.getBird(i).getObservation(t);
-                //this->HMMs[i].obs_seq.push_back(pState.getBird(i).getObservation(t));
-                this->HMMs[i].no_obs++;
+                observations[i].first[t] = pState.getBird(i).getObservation(t);
+                observations[i].second++;
             }
         }
     }
-
-    /*
-    cerr << "observation sequence:" << endl;
-    for (int t = 0; t < current_tstep; t++) {
-        cerr << HMMs[1].obs_seq[t] << ", ";
-    }
-
-    cerr << endl;
-
-    cerr << "number of observations: " << this->HMMs[0].no_obs << endl;
-    */
-
-    //cerr << "*";
-    //cerr << "once: ";
-    //for (int i : shot_once) cerr << i << " ";
-    //cerr << endl;
-    //cerr << "twice: ";
-    //for (int i : shot_twice) cerr << i << " ";
-    //cerr << endl;
-
-    //We wait some time before we start training our HMMs, to gather enough observations.
-    /* if (current_tstep == 100 - pState.getNumBirds() && pState.getRound() > 1) {
-        for (int i = 0; i < no_birds; i++) {
-            hmm::model_estimate(this->HMMs[i], false, 30);
-            //cerr << "iterations bird " << i << ": " << iters << endl;
-        }
-
-    } else */ if (current_tstep > 100 - pState.getNumBirds()
+    
+    if (current_tstep > 100 - (pState.getNumBirds() * 1.5)
+                //Only want to train on first two rounds
                 && pState.getRound() > 1
-                && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) { //Only want to train on first two rounds
+                && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) {
         //cerr << "Estimating model parameters..." << endl;
         
         vector<tuple<ESpecies, number, int, number>> most_probable(no_birds);
@@ -124,23 +77,16 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity(), i, numeric_limits<number>::infinity()};
 
             if (pState.getBird(i).isAlive()) {
-                hmm::model_estimate(this->HMMs[i], false, 20);
-                vector<number> c(HMMs[i].no_obs);
+                vector<number> c(observations[i].second);
                 
                 //cerr << "Probability for different species" << endl;
                 for (int spec = 0; spec < ESpecies::COUNT_SPECIES; spec++) {
                     if (species_hmms.find((ESpecies) spec) == species_hmms.end())
                         continue;
-                    Lambda mixed_model;
-                    mixed_model.A = species_hmms[(ESpecies) spec].A;
-                    mixed_model.B = species_hmms[(ESpecies) spec].B;
-                    mixed_model.pi = species_hmms[(ESpecies) spec].pi;
-                    mixed_model.obs_seq = HMMs[i].obs_seq;
-                    mixed_model.no_obs = HMMs[i].no_obs;
                     for (int j = 0; j < c.size(); j++)
                         c[j] = 0;
 
-                    hmm::a_pass(mixed_model, c);
+                    hmm::a_pass(species_hmms[(ESpecies) spec], c, observations[i]);
                     number log_sum = 0;
                     
                     for (int j = 0; j < c.size(); j++)
@@ -166,19 +112,10 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             }
         }
 
-        //cerr << "Guesses:" << endl;
-        //for (auto p : most_probable)
-        //    cerr << get<0>(p) << " ";
-        //cerr << endl;
-
         sort(most_probable.begin(), most_probable.end(),
             [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
                 return isnan(get<3>(b)) || get<3>(a) < get<3>(b);
         });
-
-        //cerr << "most_probable (sorted):" << endl;
-        //for (auto p : most_probable)
-        //    cerr << get<0>(p) << "\t" << get<1>(p) << "\t" << get<2>(p) << "\t" << get<3>(p) << "\t" << endl;
 
         int bird = -1;
         EMovement movement = EMovement::MOVE_DEAD;
@@ -205,47 +142,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 mixed_model.pi = species_hmms[(ESpecies) most_probable[i].first].pi;
                 mixed_model.obs_seq = HMMs[i].obs_seq;
                 mixed_model.no_obs = HMMs[i].no_obs;*/
-                movement = (EMovement) hmm::next_obs_guess(HMMs[get<2>(tup)], prob);
+                movement = (EMovement) hmm::next_obs_guess(species_hmms[get<0>(tup)], observations[get<2>(tup)], prob);
                 if (prob < 0.5)
                     continue;
                 else
                     break;
             }
-        }
-
-        //Pick a bird that is alive and is the bird with the maximum probability to shoot.
-        /*number log_prob = 0;
-        number prob_sum = 0;
-        number max_log_prob = -std::numeric_limits<number>::infinity();
-        number prob = 0;
-        number max_prob = 0;
-
-        int bird = -1;
-        int guess = -1;
-
-        cerr << "Picking most likely bird" << endl;
-        for (int i = 4; i < pState.getNumBirds(); i++) {
-            int candidate_guess;
-            if (pState.getBird(i).isAlive() && i != 10) {
-                cerr << this->HMMs[0].A << endl;
-                cerr << this->HMMs[0].B << endl;
-                cerr << this->HMMs[0].pi << endl;
-                candidate_guess = hmm::next_obs_guess(this->HMMs[i], log_prob, prob);
-                cerr << "probability: " << prob << endl ;
-                cerr << "log_prob : " << log_prob << endl << endl;
-                if (prob > max_prob) {
-                    guess = candidate_guess;
-                    max_log_prob = log_prob;
-                    bird = i;
-                    max_prob = prob;
-                }
-            }
-        }
-
-        cerr << endl << "maximum probability: " << max_prob << endl;
-        cerr << "maximum log probability: " << max_log_prob << endl;*/
-        for (int i = 0; i < no_birds; i++) {
-            this->HMMs[i].reset();
         }
 
         if (bird != -1 && prob > 0.5) {
@@ -256,7 +158,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 shot_once.insert(bird);
 
             //cerr << "Shooting at " << bird << " in direction " << movement << endl;
-            cerr << "!";
+            cerr << "|";
             shots++;
             return Action(bird, movement);
         } else {
@@ -352,32 +254,21 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
         
         vector<pair<ESpecies, number>> most_probable(lGuesses.size());
         for (int i = 0; i < lGuesses.size(); i++) {
-            hmm::model_estimate(this->HMMs[i]);
-            vector<number> c(HMMs[i].no_obs);
+            vector<number> c(observations[i].second);
 
             most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity() };
             
-            //cerr << "Probability for different species" << endl;
             for (int spec = 0; spec < ESpecies::COUNT_SPECIES; spec++) {
                 if (species_hmms.find((ESpecies) spec) == species_hmms.end())
                     continue;
-                Lambda mixed_model;
-                mixed_model.A = species_hmms[(ESpecies) spec].A;
-                mixed_model.B = species_hmms[(ESpecies) spec].B;
-                mixed_model.pi = species_hmms[(ESpecies) spec].pi;
-                mixed_model.obs_seq = HMMs[i].obs_seq;
-                mixed_model.no_obs = HMMs[i].no_obs;
-
                 for (int j = 0; j < c.size(); j++)
                     c[j] = 0;
 
-                hmm::a_pass(mixed_model, c);
+                hmm::a_pass(species_hmms[(ESpecies) spec], c, observations[i]);
                 number log_sum = 0;
                 
                 for (int j = 0; j < c.size(); j++)
                     log_sum -= log(c[j]);
-
-                //cerr << spec << ": " << log_sum << endl;
 
                 if (!isnan(log_sum) && log_sum > most_probable[i].second)
                     most_probable[i] = {(ESpecies) spec, log_sum};
@@ -403,13 +294,11 @@ void Player::hit(const GameState &pState, int pBird, const Deadline &pDue)
 
     //std::cerr << "HIT BIRD!!!" << std::endl;
     hits++;
+    cerr << "\b!";
 }
 
 void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpecies, const Deadline &pDue)
 {
-    /*
-     * If you made any guesses, you will find out the true species of those birds in this function.
-     */
     int storks = 0;
     cerr << "Actual species:" << endl;
     for (int i = 0; i < pSpecies.size(); i++)
@@ -421,27 +310,22 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
                 storks++;
 
             if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
-                //if we found a bird for which we have no model, make it the model of the species
-                vector<int> trimmed(HMMs[i].no_obs);
-                for (int j = 0; j < trimmed.size() && HMMs[i].obs_seq[j] != -1; j++)
-                    trimmed[j] = HMMs[i].obs_seq[j];
-                
-                HMMs[i].obs_seq = trimmed;
-                HMMs[i].no_obs = trimmed.size();
-                species_hmms.insert(pair<ESpecies, Lambda>(pSpecies[i], HMMs[i]));
-            } else {
+                species_hmms.insert({pSpecies[i], Lambda()});
+                species_total_observations.insert({pSpecies[i], {vector<int>(OBS_SEQ_INITIAL_SIZE), 0}});
+            
                 //else add its observations to the existing model
                 int actualLength = 0;
-                while (actualLength < HMMs[i].no_obs && HMMs[i].obs_seq[actualLength] != -1)
+                while (actualLength < observations[i].second && observations[i].first[actualLength] != -1)
                     actualLength++;
                 
-                species_hmms[pSpecies[i]].obs_seq.insert(
-                    species_hmms[pSpecies[i]].obs_seq.end(),
-                    HMMs[i].obs_seq.begin(),
-                    HMMs[i].obs_seq.begin() + actualLength);
-                species_hmms[pSpecies[i]].no_obs += actualLength;
+                species_total_observations[pSpecies[i]].first.insert(
+                    species_total_observations[pSpecies[i]].first.end(),
+                    observations[i].first.begin(),
+                    observations[i].first.begin() + actualLength);
+                species_total_observations[pSpecies[i]].second += actualLength;
 
                 species_hmms[pSpecies[i]].reset();
+                
             }
         }
     cerr << endl;
