@@ -354,9 +354,13 @@ int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observatio
 
             //cerr << lambda.A << endl;
         } else {
+            delete alpha;
+            delete beta;
             return iters;
         }
     }
+    delete alpha;
+    delete beta;
 
     return -iters;
 }
