@@ -24,7 +24,7 @@
 #define OBS_SEQ_INITIAL_SIZE 1000
 #define OBS_SEQ_SIZE 100
 #define NO_OBS_SEQS_INITIAL 10
-#define SAFETY_FACTOR 0.6
+#define SAFETY_FACTOR 0.55
 
 namespace ducks
 {
@@ -75,19 +75,19 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
-    if (current_tstep > 60//100 - (pState.getNumBirds() * 0.75 / SAFETY_FACTOR)
+    if (current_tstep > 100 - (pState.getNumBirds() / SAFETY_FACTOR)
             //Only want to train on first two rounds
-            && pState.getRound() > 1
-            && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) {
+            && pState.getRound() > 2
+            //&& species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()
+        ) {
         //cerr << "Estimating model parameters..." << endl;
         
         vector<tuple<ESpecies, number, int, number>> most_probable(no_birds);
         for (int i = 0; i < no_birds; i++) {
-            most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity(), i, numeric_limits<number>::infinity()};
+            most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity(), i, -numeric_limits<number>::infinity()};
 
             if (pState.getBird(i).isAlive()) {
                 vector<number> c(observations[i].second);
-                
                 
                 //cerr << "Probability for different species" << endl;
                 for (int spec = 0; spec < ESpecies::COUNT_SPECIES; spec++) {
@@ -103,16 +103,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     for (int j = 0; j < c.size(); j++)
                         log_sum += log(c[j]);
                     log_sum = -log_sum;
-                        
-
-                    //cerr << spec << ": " << log_sum << endl;
-                    if ((ESpecies) spec == ESpecies::SPECIES_BLACK_STORK)
-                        most_probable[i] = {
-                            get<0>(most_probable[i]),
-                            get<1>(most_probable[i]),
-                            get<2>(most_probable[i]),
-                            log_sum
-                        };
+                    
 
                     if (!isnan(log_sum) && log_sum > get<1>(most_probable[i]))
                         most_probable[i] = {
@@ -122,17 +113,21 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                             get<3>(most_probable[i])
                         };
                 }
+                
+                number p;
+                int move = hmm::next_obs_guess(species_hmms[get<0>(most_probable[i])], observations[get<2>(most_probable[i])], p);
+                most_probable[i] = {
+                    get<0>(most_probable[i]),
+                    move,
+                    get<2>(most_probable[i]),
+                    p
+                };
             }
         }
 
-        //cerr << "an/nan " << an << "/" << nan << " ";
-
         sort(most_probable.begin(), most_probable.end(),
             [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
-                if (isinf(get<1>(a)) && isinf(get<1>(b)))
-                    return get<1>(a) > get<1>(b);
-                else
-                    return (!isnan(get<3>(a)) && isnan(get<3>(b))) || get<3>(a) < get<3>(b);
+                return (isnan(get<3>(a)) && !isnan(get<3>(b))) || get<3>(a) < get<3>(b);
         });
 
         int bird = -1;
@@ -140,7 +135,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
         number a, prob;
 
-        for (int i = 0; i < most_probable.size(); i++) {
+        for (int i = most_probable.size() - 1; i >= 0; i--) {
             auto tup = most_probable[i];
             if (pState.getBird(get<2>(tup)).isAlive()
                     && get<0>(tup) != ESpecies::SPECIES_BLACK_STORK
@@ -149,7 +144,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     /*&& most_probable[i].second > något threshold*/) {
                 
                 bird = get<2>(tup);
-                movement = (EMovement) hmm::next_obs_guess(species_hmms[get<0>(tup)], observations[get<2>(tup)], prob);
+                movement = (EMovement) (int) get<1>(tup);
+                prob = get<3>(tup);
 
                 if (prob < SAFETY_FACTOR)
                     continue;
