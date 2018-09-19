@@ -22,6 +22,7 @@
 #endif
 
 #define OBS_SEQ_INITIAL_SIZE 1000
+#define SAFETY_FACTOR 0.6
 
 namespace ducks
 {
@@ -71,7 +72,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
     
-    if (current_tstep > 100 - (pState.getNumBirds() * 1.5)
+    if (current_tstep > 100 - (pState.getNumBirds() * 0.75 / SAFETY_FACTOR)
             //Only want to train on first two rounds
             && pState.getRound() > 1
             && species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()) {
@@ -90,7 +91,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 for (int spec = 0; spec < ESpecies::COUNT_SPECIES; spec++) {
                     if (species_hmms.find((ESpecies) spec) == species_hmms.end())
                         continue;
-                    /*
+                    
                     for (int j = 0; j < c.size(); j++)
                         c[j] = 0;
 
@@ -104,9 +105,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                         nan++;
                     else
                         an++;
-                        */
-
-                    number log_sum = hmm::obs_seq_prob(species_hmms[(ESpecies) spec], observations[i]);
+                        
 
                     //cerr << spec << ": " << log_sum << endl;
                     if ((ESpecies) spec == ESpecies::SPECIES_BLACK_STORK)
@@ -161,14 +160,14 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 mixed_model.obs_seq = HMMs[i].obs_seq;
                 mixed_model.no_obs = HMMs[i].no_obs;*/
                 movement = (EMovement) hmm::next_obs_guess(species_hmms[get<0>(tup)], observations[get<2>(tup)], prob);
-                if (prob < 0.5)
+                if (prob < SAFETY_FACTOR)
                     continue;
                 else
                     break;
             }
         }
 
-        if (bird != -1 && prob > 0.5) {
+        if (bird != -1 && prob > SAFETY_FACTOR) {
             if (shot_once.find(bird) != shot_once.end()) {
                 shot_once.erase(bird);
                 shot_twice.insert(bird);
