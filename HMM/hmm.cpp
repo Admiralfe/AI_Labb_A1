@@ -25,16 +25,12 @@ Lambda::Lambda() {
     A = matrix::random_uniform(NO_HS, NO_HS, 0.1);
     B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
     pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
-
-    obs_seq = vector<int>(200);
-    no_obs = 0;
 }
 
 Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<number>& init_state, const vector<int>& observations) {
     A = transition;
     B = emission;
     pi = init_state;
-    obs_seq = observations;
 }
 
 //Resets the model parameters of lambda to random_uniform values but keeps the observation sequence.
@@ -48,28 +44,27 @@ void Lambda::reset() {
  * Returns the most likely next observation given a model lambda and a current observation sequence.
  * max_log_prob will be set to the probability of that most likely observation upon function return.
  */
-int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
+int hmm::next_obs_guess(const Lambda& lambda, number& max_log_prob, pair<vector<int>, int>& observations) {
     int no_diff_obs = lambda.B.getWidth();
 
     number norm_factor = 0;
     max_log_prob = -std::numeric_limits<number>::infinity();
     number log_prob;
     int next_obs_guess = 0;
-    prob = 0;
 
     //cerr << "In next_obs_guess: " << lambda.obs_seq[lambda.no_obs - 1] << endl;
 
     //Iterate through the possible next observations
     for (int obs = 0; obs < no_diff_obs; obs++) {
-        vector<number> c = vector<number>(lambda.no_obs + 1);
+        vector<number> c = vector<number>(observations.second + 1);
 
         //Add next observation guess to the sequence
-        lambda.obs_seq[lambda.no_obs] = obs;
-        lambda.no_obs++;
-        matrix alpha_normed = hmm::a_pass(lambda, c);
+        observations.first[observations.second] = obs;
+        observations.second++;
+        matrix alpha_normed = hmm::a_pass(lambda, c, observations);
         //Compute log probability and pick maximum probability one.
         log_prob = 0;
-        for (int i = 0; i < lambda.no_obs; i++) {
+        for (int i = 0; i < observations.second; i++) {
             log_prob += log(c[i]);
         }
         log_prob = -log_prob;
@@ -84,15 +79,13 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_log_prob, number& prob) {
         norm_factor += exp(log_prob);
 
         //This effectively removes the added observation guess from obs_seq.
-        lambda.no_obs--;
+        observations.second--;
     }
-
-    prob = exp(max_log_prob) / norm_factor;
 
     return next_obs_guess;
 }
 
-int hmm::next_obs_guess(Lambda& lambda, number& max_prob) {
+int hmm::next_obs_guess(const Lambda& lambda, number& max_prob, const pair<vector<int>, int>& observations) {
     int no_diff_obs = lambda.B.getWidth();
     int no_states = lambda.A.getWidth();
 
@@ -104,19 +97,14 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_prob) {
 
     //Iterate through the possible next observations
     for (int obs = 0; obs < no_diff_obs; obs++) {
-        vector<number> c = vector<number>(lambda.no_obs + 1);
-
+        vector<number> c = vector<number>(observations.second);
         prob = 0;
 
-        //Add next observation guess to the sequence
-        //lambda.obs_seq[lambda.no_obs] = obs;
-        //lambda.no_obs++;
-        matrix alpha_normed = hmm::a_pass(lambda, c);
-
+        matrix alpha_normed = hmm::a_pass(lambda, c, observations);
         for (int i = 0; i < no_states; i++) {
             number inner = 0;
             for (int j = 0; j < no_states; j++) {
-                inner += lambda.A.get(j, i) * alpha_normed.get(j ,lambda.no_obs - 1);
+                inner += lambda.A.get(j, i) * alpha_normed.get(j ,observations.second - 1);
             }
 
             //cerr << "inner sum: " << inner << endl;
@@ -135,31 +123,27 @@ int hmm::next_obs_guess(Lambda& lambda, number& max_prob) {
     return next_obs_guess;
 }
 
-number hmm::obs_seq_prob(Lambda& lambda, const vector<int>& obs_seq_in) {
+number hmm::obs_seq_prob(const Lambda& lambda, const pair<vector<int>, int>& observations) {
     number log_prob = 0;
 
-    vector<int> prev_obs_seq = lambda.obs_seq;
-    lambda.obs_seq = obs_seq_in;
-    vector<number> c = vector<number>(lambda.no_obs);
+    vector<number> c = vector<number>(observations.second);
 
-    hmm::a_pass(lambda, c);
+    hmm::a_pass(lambda, c, observations);
 
-    for (int i = 0; i < lambda.no_obs; i++) {
+    for (int i = 0; i < observations.second; i++) {
         log_prob += log(c[i]);
     }
 
     log_prob = -log_prob;
-
-    lambda.obs_seq = prev_obs_seq;
 
     return exp(log_prob);
 }
 //gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
 //förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
 //c kommer att populeras med normeringskonstanter
-matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
+matrix hmm::a_pass(const Lambda& lambda, vector<number>& c, const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
-    int seq_length = lambda.no_obs;
+    int seq_length = observations.second;
 
     //cerr << "XD " << seq_length << endl;
     
@@ -178,7 +162,7 @@ matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
     mat alpha = mat(no_states, seq_length);
 
     for (int i = 0; i < no_states; i++) {
-        alpha.set(i, 0, lambda.pi[i] * lambda.B.get(i, lambda.obs_seq[0]));
+        alpha.set(i, 0, lambda.pi[i] * lambda.B.get(i, observations.first[0]));
         c[0] += alpha.get(i, 0);
     }
 
@@ -194,7 +178,7 @@ matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
             sum = 0;
             for (int j = 0; j < no_states; j++)
                 sum += alpha.get(j, t - 1) * lambda.A.get(j, i);
-            elem = sum * lambda.B.get(i, lambda.obs_seq[t]);
+            elem = sum * lambda.B.get(i, observations.first[t]);
             alpha.set(i, t, elem);
             c[t] += elem;
         }
@@ -207,9 +191,10 @@ matrix hmm::a_pass(const Lambda& lambda, vector<number>& c) {
 }
 
 //förutsätter att en alpha-pass redan gjorts och att värdena i c inte har ändrats
-matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha) {
+matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha,
+                   const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
-    int seq_length = lambda.no_obs;
+    int seq_length = observations.second;
 
     #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
@@ -232,7 +217,7 @@ matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& 
         for (int i = 0; i < no_states; i++) {
             number sum = 0;
             for (int j = 0; j < no_states; j++)
-                sum += lambda.A.get(i, j) * lambda.B.get(j, lambda.obs_seq[t + 1]) * beta.get(j, t + 1);
+                sum += lambda.A.get(i, j) * lambda.B.get(j, observations.first[t + 1]) * beta.get(j, t + 1);
 
             beta.set(i, t, c[t] * sum);
         }
@@ -258,9 +243,9 @@ matrix hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix& 
     return beta;
 }
 
-vector<int> hmm::viterbi(const Lambda& lambda) {
+vector<int> hmm::viterbi(const Lambda& lambda, const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
-    int seq_length = lambda.no_obs;
+    int seq_length = observations.second;
 
     #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
@@ -277,7 +262,7 @@ vector<int> hmm::viterbi(const Lambda& lambda) {
 
     //Initialize first column
     for (int i = 0; i < no_states; i++) {
-        number entry = log(lambda.B.get(i, lambda.obs_seq[0])) + log(lambda.pi[i]);
+        number entry = log(lambda.B.get(i, observations.first[0])) + log(lambda.pi[i]);
         log_delta.set(i, 0, entry);
     }
 
@@ -299,7 +284,7 @@ vector<int> hmm::viterbi(const Lambda& lambda) {
                 }
             }
 
-            log_delta.set(i, t, max  + log(lambda.B.get(i, lambda.obs_seq[t])));
+            log_delta.set(i, t, max  + log(lambda.B.get(i, observations.first[t])));
             delta_index[i][t] = index_max;
         }
     }
@@ -326,23 +311,23 @@ vector<int> hmm::viterbi(const Lambda& lambda) {
     return res;
 }
 
-int hmm::model_estimate(Lambda& lambda, bool verbose, int max_iter) {
-    vector<number> c = vector<number>(lambda.no_obs);
+int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observations, bool verbose, int max_iter) {
+    vector<number> c = vector<number>(observations.second);
     int iters = 0;
     int maxiters = max_iter;
 
     number old_log_prob = -std::numeric_limits<number>::infinity();
 
-    matrix alpha = hmm::a_pass(lambda, c);
-    matrix beta = hmm::b_pass(lambda, c, alpha);
-    hmm::reestimate(lambda, alpha, beta);
+    matrix alpha = hmm::a_pass(lambda, c, observations);
+    matrix beta = hmm::b_pass(lambda, c, alpha, observations);
+    hmm::reestimate(lambda, alpha, beta, observations);
 
 
     while (iters < maxiters) {
         iters++;
         number log_prob = 0;
 
-        for (int i = 0; i < lambda.no_obs; i++) {
+        for (int i = 0; i < observations.second; i++) {
             log_prob += log(c[i]);
         }
 
@@ -357,9 +342,9 @@ int hmm::model_estimate(Lambda& lambda, bool verbose, int max_iter) {
         if (log_prob - old_log_prob > PROB_EPSILON) {
             old_log_prob = log_prob;
 
-            alpha = hmm::a_pass(lambda, c);
-            beta = hmm::b_pass(lambda, c, alpha);
-            hmm::reestimate(lambda, alpha, beta);
+            alpha = hmm::a_pass(lambda, c, observations);
+            beta = hmm::b_pass(lambda, c, alpha, observations);
+            hmm::reestimate(lambda, alpha, beta, observations);
 
             //cerr << lambda.A << endl;
         } else {
@@ -377,9 +362,9 @@ bool number_equal(number a, number b) {
 
 //räknar ut ny modell (A, B, pi) utifrån datan från en alpha- och en beta-pass
 //A, B och pi kommer att skrivas över
-void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
+void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta, const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
-    int seq_length = lambda.no_obs;
+    int seq_length = observations.second;
 
     #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
@@ -404,11 +389,12 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
 
         for (int i = 0; i < no_states; i++)
             for (int j = 0; j < no_states; j++)
-                denom += alpha.get(i, t) * lambda.A.get(i, j) * lambda.B.get(j, lambda.obs_seq[t + 1]) * beta.get(j, t + 1);
+                denom += alpha.get(i, t) * lambda.A.get(i, j) * lambda.B.get(j, observations.first[t + 1]) * beta.get(j, t + 1);
 
         for (int i = 0; i < no_states; i++) {
             for (int j = 0; j < no_states; j++) {
-                digamma[t]->set(i, j, alpha.get(i, t) * lambda.A.get(i, j) * lambda.B.get(j, lambda.obs_seq[t + 1]) * beta.get(j, t + 1) / denom);
+                digamma[t]->set(i, j, alpha.get(i, t) * lambda.A.get(i, j)
+                                      * lambda.B.get(j, observations.first[t + 1]) * beta.get(j, t + 1) / denom);
                 gamma.set(i, t, gamma.get(i, t) + digamma[t]->get(i, j));
             }
         }
@@ -450,7 +436,7 @@ void hmm::reestimate(Lambda& lambda, const matrix& alpha, const matrix& beta) {
             denom = 0;
 
             for (int t = 0; t < seq_length; t++) {
-                if (lambda.obs_seq[t] == j)
+                if (observations.first[t] == j)
                     numer += gamma.get(i, t);
                 denom += gamma.get(i, t);
             }
