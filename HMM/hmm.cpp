@@ -373,8 +373,6 @@ void hmm::model_estimate(Lambda& lambda, const vector<pair<vector<int>, int>>& o
     vector<number> c = vector<number>(observations[0].second);
     int iters = 0;
     int maxiters = max_iter;
-    int no_states = lambda.A.getWidth();
-    int no_obs = lambda.B.getWidth();
 
     while (iters < maxiters) {
         vector<matrix*> alphas(observations.size());
@@ -384,8 +382,9 @@ void hmm::model_estimate(Lambda& lambda, const vector<pair<vector<int>, int>>& o
             alphas[k] = hmm::a_pass(lambda, c, observations[k]);
             betas[k] = hmm::b_pass(lambda, c, alphas[k], observations[k]);
         }
+
         lambda = hmm::mult_seq_estimate(lambda, alphas, betas, observations);
-        
+
         for (int k = 0; k < observations.size(); k++) {
             delete alphas[k];
             alphas[k] = nullptr;
@@ -556,13 +555,13 @@ Lambda hmm::mult_seq_estimate(const Lambda& lambda, const vector<matrix*>& alpha
     for (int k = 0; k < no_observation_sequences; k++) {
         int seq_length = observations[k].second;
 
-        matrix gamma = matrix(no_states, seq_length); //indexed gamma.get(i, t)
-        vector<matrix*> digamma = vector<matrix*>(seq_length); //indexed digamma[t].get(i, j)
+        matrix* gamma = new matrix(no_states, seq_length); //indexed gamma.get(i, t)
+        vector<matrix*>* digamma = new vector<matrix*>(seq_length); //indexed digamma[t].get(i, j)
         number denom;
 
         for (int t = 0; t < seq_length - 1; t++) {
             denom = 0;
-            digamma[t] = new matrix(no_states, no_states);
+            (*digamma)[t] = new matrix(no_states, no_states);
 
             for (int i = 0; i < no_states; i++)
                 for (int j = 0; j < no_states; j++)
@@ -570,22 +569,22 @@ Lambda hmm::mult_seq_estimate(const Lambda& lambda, const vector<matrix*>& alpha
 
             for (int i = 0; i < no_states; i++) {
                 for (int j = 0; j < no_states; j++) {
-                    digamma[t]->set(i, j, alphas[k]->get(i, t) * lambda.A.get(i, j)
+                    (*digamma)[t]->set(i, j, alphas[k]->get(i, t) * lambda.A.get(i, j)
                                         * lambda.B.get(j, observations[k].first[t + 1]) * betas[k]->get(j, t + 1) / denom);
-                    gamma.set(i, t, gamma.get(i, t) + digamma[t]->get(i, j));
+                    gamma->set(i, t, gamma->get(i, t) + (*digamma)[t]->get(i, j));
                 }
             }
-        }
+            }
 
         denom = 0;
         for (int i = 0; i < no_states; i++)
             denom += alphas[k]->get(i, seq_length - 1);
 
         for (int i = 0; i < no_states; i++)
-            gamma.set(i, seq_length - 1, alphas[k]->get(i, seq_length - 1) / denom);
-        
-        digammas[k] = &digamma;
-        gammas[k] = &gamma;
+            gamma->set(i, seq_length - 1, alphas[k]->get(i, seq_length - 1) / denom);
+
+        digammas[k] = digamma;
+        gammas[k] = gamma;
     }
 
     //re-estimate A, B and pi
@@ -593,8 +592,9 @@ Lambda hmm::mult_seq_estimate(const Lambda& lambda, const vector<matrix*>& alpha
     //pi
     for (int i = 0; i < no_states; i++) {
         res.pi[i] = 0;
-        for (int k = 0; k < no_observation_sequences; k++)
+        for (int k = 0; k < no_observation_sequences; k++) {
             res.pi[i] += gammas[k]->get(i, 0);
+        }
         res.pi[i] /= no_observation_sequences;
     }
 
@@ -631,6 +631,7 @@ Lambda hmm::mult_seq_estimate(const Lambda& lambda, const vector<matrix*>& alpha
             res.B.set(i, j, numer / denom);
         }
     }
+
     for (int k = 0; k < no_observation_sequences; k++) {
         for (int t = 0; t < observations[k].second; t++) {
             delete (*digammas[k])[t];

@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cassert>
 
-#define FELIX_EFTERBLIVNA_CLION
+//#define FELIX_EFTERBLIVNA_CLION
 
 #ifdef FELIX_EFTERBLIVNA_CLION
 #include "Player.hpp"
@@ -74,7 +74,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             }
         }
     }
-    
+
     if (current_tstep > 100 - (pState.getNumBirds() * 0.75 / SAFETY_FACTOR)
             //Only want to train on first two rounds
             && pState.getRound() > 1
@@ -147,6 +147,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 
                 bird = get<2>(tup);
                 movement = (EMovement) hmm::next_obs_guess(species_hmms[get<0>(tup)], observations[get<2>(tup)], prob);
+                
                 if (prob < SAFETY_FACTOR)
                     continue;
                 else
