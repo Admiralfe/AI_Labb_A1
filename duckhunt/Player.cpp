@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <cassert>
 
 #ifdef FELIX_EFTERBLIVNA_CLION
 #include "Player.hpp"
@@ -49,6 +50,9 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         observations = vector<pair<vector<int>, int>>(pState.getNumBirds());
         for (int i = 0; i < observations.size(); i++)
             observations[i] = { vector<int>(100), 0 };
+        for (auto p : species_total_observations)
+            for (int i = 0; i < p.second.second; i++)
+                assert(p.second.first[i] != -1);
     }
 
     size_t no_birds = pState.getNumBirds();
@@ -111,11 +115,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                 }
             }
         }
-
+        cerr << "sorting,";
         sort(most_probable.begin(), most_probable.end(),
             [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
                 return isnan(get<3>(b)) || get<3>(a) < get<3>(b);
         });
+        cerr << "finding,";
 
         int bird = -1;
         EMovement movement = EMovement::MOVE_DEAD;
@@ -171,7 +176,12 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         if (current_round != 0) {
             ESpecies current = (ESpecies)(current_tstep % ESpecies::COUNT_SPECIES);
             if (species_hmms.find(current) != species_hmms.end())
-                hmm::model_estimate(species_hmms[current], false, 10 - (current_round / 2));
+                hmm::model_estimate(
+                    species_hmms[current],
+                    species_total_observations[current],
+                    false,
+                    10 - (current_round / 2)
+                );
         }
     }
     
@@ -315,13 +325,18 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
             
                 //else add its observations to the existing model
                 int actualLength = 0;
-                while (actualLength < observations[i].second && observations[i].first[actualLength] != -1)
+                const int offset = species_total_observations[pSpecies[i]].second;
+                while (actualLength < observations[i].second && observations[i].first[actualLength] != -1) {
+                    species_total_observations[pSpecies[i]].first[offset + actualLength] = observations[i].first[actualLength];
                     actualLength++;
-                
-                species_total_observations[pSpecies[i]].first.insert(
-                    species_total_observations[pSpecies[i]].first.end(),
-                    observations[i].first.begin(),
-                    observations[i].first.begin() + actualLength);
+                    if (offset + actualLength >= species_total_observations[pSpecies[i]].first.size()) {
+                        vector<int> v(species_total_observations[pSpecies[i]].first.size() + OBS_SEQ_INITIAL_SIZE);
+                        for (int j = 0; j < offset + actualLength; j++)
+                            v[j] = species_total_observations[pSpecies[i]].first[j];
+                        
+                        species_total_observations[pSpecies[i]].first = v;
+                    }
+                }
                 species_total_observations[pSpecies[i]].second += actualLength;
 
                 species_hmms[pSpecies[i]].reset();

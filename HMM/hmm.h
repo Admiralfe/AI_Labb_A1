@@ -23,8 +23,8 @@ Lambda init_lambda();
 class hmm {
     public:
         static number obs_seq_prob(const Lambda& lambda, const pair<vector<int>, int>& observations);
-        static int next_obs_guess(const Lambda& lambda, number& prob, const pair<vector<int>, int>& observations);
-        static int next_obs_guess(const Lambda& lambda, number& max_log_prob, pair<vector<int>, int>& observation);
+        static int next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& observations, number& prob);
+        static int next_obs_guess(const Lambda& lambda, pair<vector<int>, int>& observations, number& max_log_prob);
         static matrix a_pass(const Lambda& lambda, vector<number>& c, const pair<vector<int>, int>& observations);
         static matrix b_pass(const Lambda& lambda, const vector<number>& c, const matrix& alpha, const pair<vector<int>, int>& observations);
         static vector<int> viterbi(const Lambda& lambda, const pair<vector<int>, int>& observations);
