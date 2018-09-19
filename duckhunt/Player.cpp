@@ -98,7 +98,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     number log_sum = 0;
                     
                     for (int j = 0; j < c.size(); j++)
-                        log_sum -= log(c[j]);
+                        log_sum += log(c[j]);
+                    log_sum = -log_sum;
                     if (isnan(log_sum))
                         nan++;
                     else
@@ -290,7 +291,8 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
                 number log_sum = 0;
                 
                 for (int j = 0; j < c.size(); j++)
-                    log_sum -= log(c[j]);
+                    log_sum += log(c[j]);
+                log_sum = -log_sum;
 
                 if (!isnan(log_sum) && log_sum > most_probable[i].second)
                     most_probable[i] = {(ESpecies) spec, log_sum};
@@ -331,29 +333,29 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
             if (pSpecies[i] == ESpecies::SPECIES_BLACK_STORK)
                 storks++;
 
+            //add a species model if there is none
             if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
                 species_hmms.insert({pSpecies[i], Lambda()});
                 species_total_observations.insert({pSpecies[i], {vector<int>(OBS_SEQ_INITIAL_SIZE), 0}});
-            
-                //else add its observations to the existing model
-                int actualLength = 0;
-                const int offset = species_total_observations[pSpecies[i]].second;
-                while (actualLength < observations[i].second && observations[i].first[actualLength] != -1) {
-                    species_total_observations[pSpecies[i]].first[offset + actualLength] = observations[i].first[actualLength];
-                    actualLength++;
-                    if (offset + actualLength >= species_total_observations[pSpecies[i]].first.size()) {
-                        vector<int> v(species_total_observations[pSpecies[i]].first.size() + OBS_SEQ_INITIAL_SIZE);
-                        for (int j = 0; j < offset + actualLength; j++)
-                            v[j] = species_total_observations[pSpecies[i]].first[j];
-                        
-                        species_total_observations[pSpecies[i]].first = v;
-                    }
-                }
-                species_total_observations[pSpecies[i]].second += actualLength;
-
-                species_hmms[pSpecies[i]].reset();
-                
             }
+
+            //add its observations to the existing model
+            int actualLength = 0;
+            const int offset = species_total_observations[pSpecies[i]].second;
+            while (actualLength < observations[i].second && observations[i].first[actualLength] != -1) {
+                species_total_observations[pSpecies[i]].first[offset + actualLength] = observations[i].first[actualLength];
+                actualLength++;
+                if (offset + actualLength >= species_total_observations[pSpecies[i]].first.size()) {
+                    vector<int> v(species_total_observations[pSpecies[i]].first.size() + OBS_SEQ_INITIAL_SIZE);
+                    for (int j = 0; j < offset + actualLength; j++)
+                        v[j] = species_total_observations[pSpecies[i]].first[j];
+                    
+                    species_total_observations[pSpecies[i]].first = v;
+                }
+            }
+            species_total_observations[pSpecies[i]].second += actualLength;
+
+            species_hmms[pSpecies[i]].reset();
         }
     cerr << endl;
     cerr << storks << " black stork" << (storks == 1 ? "" : "s") << endl;
