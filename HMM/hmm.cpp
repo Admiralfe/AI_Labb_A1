@@ -11,7 +11,7 @@
 
 #define NO_OBS 9
 #define NO_HS 3
-#define VARIANCE 0.08
+#define VARIANCE 0.04
 #define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
 #define SAFETY_OFF_HMM
@@ -24,7 +24,7 @@ typedef vector<number> vec;
 
 Lambda::Lambda() {
     A = matrix::random_uniform(NO_HS, NO_HS, VARIANCE);
-    B = matrix::random_uniform(NO_HS, NO_OBS, VARIANCE / 4.0);
+    B = matrix::random_uniform(NO_HS, NO_OBS, VARIANCE);
     pi = matrix::random_uniform(1, NO_HS, VARIANCE).get_row(0);
 }
 
@@ -37,7 +37,7 @@ Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<nu
 //Resets the model parameters of lambda to random_uniform values but keeps the observation sequence.
 void Lambda::reset() {
     A = matrix::random_uniform(NO_HS, NO_HS, VARIANCE);
-    B = matrix::random_uniform(NO_HS, NO_OBS, VARIANCE / 4.0);
+    B = matrix::random_uniform(NO_HS, NO_OBS, VARIANCE);
     pi = matrix::random_uniform(1, NO_HS, VARIANCE).get_row(0);
 }
 
