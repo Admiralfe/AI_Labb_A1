@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cassert>
 
-//#define FELIX_EFTERBLIVNA_CLION
+#define FELIX_EFTERBLIVNA_CLION
 
 #ifdef FELIX_EFTERBLIVNA_CLION
 #include "Player.hpp"
@@ -47,14 +47,32 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         current_tstep = 0;
         if (current_round != 0)
             cerr << "Previous round took " << ((double) (clock() - roundTimer) / CLOCKS_PER_SEC * 1000.0) << "ms" << endl;
+        else {
+            blacklist = vector<ESpecies>();
+            blacklist.push_back(SPECIES_BLACK_STORK);
+        }
         roundTimer = clock();
         cerr << "Round " << current_round << endl;
+
+        /*if (current_round == 0) {
+            birds_hmms = vector<Lambda>(pState.getNumBirds());
+
+            for (int i = 0; i < birds_hmms.size(); i++) {
+                birds_hmms[i] = Lambda();
+            }
+        } else {
+            for (int i = 0; i < birds_hmms.size(); i++) {
+                birds_hmms[i].reset();
+            }
+        }
+         */
 
         shot_once = set<int>();
         shot_twice = set<int>();
         observations = vector<pair<vector<int>, int>>(pState.getNumBirds());
         for (int i = 0; i < observations.size(); i++)
             observations[i] = { vector<int>(100), 0 };
+
         //for (auto p : species_total_observations)
         //    for (int i = 0; i < p.second.second; i++)
         //        assert(p.second.first[i] != -1);
@@ -75,14 +93,15 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
+    vector<tuple<ESpecies, number, int, number>> most_probable(no_birds);
+
     if (current_tstep > 100 - (pState.getNumBirds() / SAFETY_FACTOR)
             //Only want to train on first two rounds
-            && pState.getRound() > 2
+            && pState.getRound() > 3
             //&& species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()
         ) {
         //cerr << "Estimating model parameters..." << endl;
-        
-        vector<tuple<ESpecies, number, int, number>> most_probable(no_birds);
+
         for (int i = 0; i < no_birds; i++) {
             most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity(), i, -numeric_limits<number>::infinity()};
 
@@ -103,7 +122,6 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     for (int j = 0; j < c.size(); j++)
                         log_sum += log(c[j]);
                     log_sum = -log_sum;
-                    
 
                     if (!isnan(log_sum) && log_sum > get<1>(most_probable[i]))
                         most_probable[i] = {
@@ -113,17 +131,28 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                             get<3>(most_probable[i])
                         };
                 }
-                
+
                 number p;
+
+                /*int iters = hmm::model_estimate(birds_hmms[i], observations[i], false, 30);
+                int move = hmm::next_obs_guess(birds_hmms[i], observations[i], p);
+                 */
+
                 int move = hmm::next_obs_guess(species_hmms[get<0>(most_probable[i])], observations[get<2>(most_probable[i])], p);
+
                 most_probable[i] = {
-                    get<0>(most_probable[i]),
-                    move,
-                    get<2>(most_probable[i]),
-                    p
+                        get<0>(most_probable[i]),
+                        move,
+                        get<2>(most_probable[i]),
+                        p
                 };
             }
         }
+
+        /*for (int i = 0; i < no_birds; i++) {
+            cerr << "stork prob test: " << stork_probabilities[i] << endl;
+        }
+         */
 
         sort(most_probable.begin(), most_probable.end(),
             [](tuple<ESpecies, number, int, number> a, tuple<ESpecies, number, int, number> b) {
@@ -133,12 +162,13 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         int bird = -1;
         EMovement movement = EMovement::MOVE_DEAD;
 
-        number a, prob;
+        number prob;
 
         for (int i = most_probable.size() - 1; i >= 0; i--) {
             auto tup = most_probable[i];
             if (pState.getBird(get<2>(tup)).isAlive()
-                    && get<0>(tup) != ESpecies::SPECIES_BLACK_STORK
+                    && find(blacklist.begin(), blacklist.end(), get<0>(tup)) == blacklist.end()
+                    //&& get<0>(tup) != ESpecies::SPECIES_BLACK_STORK
                     && get<0>(tup) != ESpecies::SPECIES_UNKNOWN
                     //&& shot_twice.find(get<2>(tup)) == shot_twice.end()
                     /*&& most_probable[i].second > något threshold*/) {
@@ -169,7 +199,16 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             cerr << "x";
             return cDontShoot;
         }
-    } else {
+    }
+
+    //Adds the final guesses for the birds species to a map, to check for stork errors later.
+    else if (current_tstep == 99) {
+        for (int i = 0; i < most_probable.size(); i++) {
+            bird_species_map.insert({i, get<0>(most_probable[i])});
+        }
+    }
+
+    else {
         //train species models
         cerr << "*";
         if (current_round != 0) {
@@ -179,9 +218,10 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                     species_hmms[current],
                     species_observations[current],
                     false,
-                    8 - (current_round / 2)
+                    9 - (current_round / 2)
                 );
         }
+
     }
     
     // This line choose not to shoot
@@ -261,8 +301,15 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
             //cerr << "Bird " << i << " was " << pSpecies[i] << endl;
             cerr << pSpecies[i] << " ";
 
-            if (pSpecies[i] == ESpecies::SPECIES_BLACK_STORK)
+            if (pSpecies[i] == ESpecies::SPECIES_BLACK_STORK) {
                 storks++;
+
+                //If bird i was a stork but we thought it was something else, add the species to a blacklist
+                //Since it is probably similar to the stork.
+                //Also since we are guessing at random on first round we don't add anything to blacklist then.
+                if (bird_species_map[i] != SPECIES_BLACK_STORK && pState.getRound() != 0)
+                    blacklist.push_back(bird_species_map[i]);
+            }
 
             if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
                 species_hmms.insert({pSpecies[i], Lambda()});
@@ -304,6 +351,7 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
             species_hmms[pSpecies[i]].reset();
         }
     }
+    cerr << "Number of blacklisted species: " << blacklist.size() << endl;
     cerr << endl;
     cerr << storks << " black stork" << (storks == 1 ? "" : "s") << endl;
     cerr << "So far hit " << hits << " of " << shots << " shot" << (shots == 1 ? "" : "s") << endl;

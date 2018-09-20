@@ -11,6 +11,7 @@
 
 #define NO_OBS 9
 #define NO_HS 3
+#define VARIANCE 0.08
 #define TIME_OUT -2
 //#define ALWAYS_ROW_STOCHASTIC
 #define SAFETY_OFF_HMM
@@ -22,9 +23,9 @@ typedef matrix mat;
 typedef vector<number> vec;
 
 Lambda::Lambda() {
-    A = matrix::random_uniform(NO_HS, NO_HS, 0.1);
-    B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
-    pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
+    A = matrix::random_uniform(NO_HS, NO_HS, VARIANCE);
+    B = matrix::random_uniform(NO_HS, NO_OBS, VARIANCE / 4.0);
+    pi = matrix::random_uniform(1, NO_HS, VARIANCE).get_row(0);
 }
 
 Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<number>& init_state, const vector<int>& observations) {
@@ -35,9 +36,9 @@ Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<nu
 
 //Resets the model parameters of lambda to random_uniform values but keeps the observation sequence.
 void Lambda::reset() {
-    A = matrix::random_uniform(NO_HS, NO_HS, 0.1);
-    B = matrix::random_uniform(NO_HS, NO_OBS, 0.1);
-    pi = matrix::random_uniform(1, NO_HS, 0.1).get_row(0);
+    A = matrix::random_uniform(NO_HS, NO_HS, VARIANCE);
+    B = matrix::random_uniform(NO_HS, NO_OBS, VARIANCE / 4.0);
+    pi = matrix::random_uniform(1, NO_HS, VARIANCE).get_row(0);
 }
 
 /*
@@ -315,16 +316,23 @@ vector<int> hmm::viterbi(const Lambda& lambda, const pair<vector<int>, int>& obs
 }
 
 int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observations, bool verbose, int max_iter) {
+    cerr << "a" << endl;
     vector<number> c = vector<number>(observations.second);
     int iters = 0;
     int maxiters = max_iter;
 
     number old_log_prob = -std::numeric_limits<number>::infinity();
 
+    cerr << "b" << endl;
     matrix* alpha = hmm::a_pass(lambda, c, observations);
+    cerr << "c" << endl;
     matrix* beta = hmm::b_pass(lambda, c, alpha, observations);
+    cerr << "d" << endl;
     hmm::reestimate(lambda, alpha, beta, observations);
+    cerr << "e" << endl;
 
+    delete alpha;
+    delete beta;
 
     while (iters < maxiters) {
         iters++;
@@ -345,22 +353,13 @@ int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observatio
         if (log_prob - old_log_prob > PROB_EPSILON) {
             old_log_prob = log_prob;
 
-            delete alpha;
-            delete beta;
-
             alpha = hmm::a_pass(lambda, c, observations);
             beta = hmm::b_pass(lambda, c, alpha, observations);
             hmm::reestimate(lambda, alpha, beta, observations);
-
-            //cerr << lambda.A << endl;
         } else {
-            delete alpha;
-            delete beta;
             return iters;
         }
     }
-    delete alpha;
-    delete beta;
 
     return -iters;
 }

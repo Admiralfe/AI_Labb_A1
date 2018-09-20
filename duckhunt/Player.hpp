@@ -5,7 +5,7 @@
 #include "GameState.hpp"
 #include "Action.hpp"
 
-//#define FELIX_EFTERBLIVNA_CLION_H
+#define FELIX_EFTERBLIVNA_CLION_H
 #ifdef FELIX_EFTERBLIVNA_CLION_H
 #include "../HMM/hmm.h"
 #else
@@ -86,6 +86,9 @@ public:
         unordered_map<ESpecies, Lambda, std::hash<int>> species_hmms;
         unordered_map<ESpecies, pair<vector<int>, int>, std::hash<int>> species_total_observations;
         unordered_map<ESpecies, vector<pair<vector<int>, int>>, std::hash<int>> species_observations;
+        unordered_map<int, ESpecies> bird_species_map;
+        vector<ESpecies> blacklist;
+        vector<Lambda> birds_hmms;
         set<int> shot_once;
         set<int> shot_twice;
         int shots;
