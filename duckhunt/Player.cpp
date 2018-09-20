@@ -47,25 +47,8 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         current_tstep = 0;
         if (current_round != 0)
             cerr << "Previous round took " << ((double) (clock() - roundTimer) / CLOCKS_PER_SEC * 1000.0) << "ms" << endl;
-        else {
-            blacklist = vector<ESpecies>();
-            blacklist.push_back(SPECIES_BLACK_STORK);
-        }
         roundTimer = clock();
         cerr << "Round " << current_round << endl;
-
-        /*if (current_round == 0) {
-            birds_hmms = vector<Lambda>(pState.getNumBirds());
-
-            for (int i = 0; i < birds_hmms.size(); i++) {
-                birds_hmms[i] = Lambda();
-            }
-        } else {
-            for (int i = 0; i < birds_hmms.size(); i++) {
-                birds_hmms[i].reset();
-            }
-        }
-         */
 
         shot_once = set<int>();
         shot_twice = set<int>();
@@ -211,13 +194,6 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         }
     }
 
-    //Adds the final guesses for the birds species to a map, to check for stork errors later.
-    else if (current_tstep == 99) {
-        for (int i = 0; i < most_probable.size(); i++) {
-            bird_species_map.insert({i, get<0>(most_probable[i])});
-        }
-    }
-
     else {
         //train species models
         cerr << "*";
@@ -250,18 +226,23 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
     cerr << endl;
 
+    bird_species_map.clear();
+
     std::vector<ESpecies> lGuesses(pState.getNumBirds(), SPECIES_UNKNOWN);
 
-    if (current_round == 0)
+    if (current_round == 0) {
         for (int i = 0; i < lGuesses.size(); i++)
-            lGuesses[i] = (ESpecies)(i % ESpecies::COUNT_SPECIES);
-    else {        
+            lGuesses[i] = (ESpecies) (i % ESpecies::COUNT_SPECIES);
+
+        blacklist = vector<ESpecies>();
+        blacklist.push_back(SPECIES_BLACK_STORK);
+    } else {
         vector<pair<ESpecies, number>> most_probable(lGuesses.size());
         for (int i = 0; i < lGuesses.size(); i++) {
             vector<number> c(observations[i].second);
 
             most_probable[i] = { ESpecies::SPECIES_UNKNOWN, -numeric_limits<number>::infinity() };
-            
+
             for (int spec = 0; spec < ESpecies::COUNT_SPECIES; spec++) {
                 if (species_hmms.find((ESpecies) spec) == species_hmms.end())
                     continue;
@@ -270,7 +251,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
                 delete hmm::a_pass(species_hmms[(ESpecies) spec], c, observations[i]);
                 number log_sum = 0;
-                
+
                 for (int j = 0; j < c.size(); j++)
                     log_sum += log(c[j]);
                 log_sum = -log_sum;
@@ -279,6 +260,8 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
                     most_probable[i] = {(ESpecies) spec, log_sum};
             }
             lGuesses[i] = most_probable[i].first;
+
+            bird_species_map.insert({i, most_probable[i].first});
         }
 
     }
@@ -317,8 +300,9 @@ void Player::reveal(const GameState &pState, const std::vector<ESpecies> &pSpeci
                 //If bird i was a stork but we thought it was something else, add the species to a blacklist
                 //Since it is probably similar to the stork.
                 //Also since we are guessing at random on first round we don't add anything to blacklist then.
-                if (bird_species_map[i] != SPECIES_BLACK_STORK && pState.getRound() != 0)
-                    blacklist.push_back(bird_species_map[i]);
+                if (bird_species_map[i] != SPECIES_BLACK_STORK && pState.getRound() > 1)
+                    if (find(blacklist.begin(), blacklist.end(), bird_species_map[i]) == blacklist.end())
+                        blacklist.push_back(bird_species_map[i]);
             }
 
             if (species_hmms.find(pSpecies[i]) == species_hmms.end()) {
