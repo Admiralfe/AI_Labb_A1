@@ -5,7 +5,7 @@
 #include "GameState.hpp"
 #include "Action.hpp"
 
-#define FELIX_EFTERBLIVNA_CLION_H
+//#define FELIX_EFTERBLIVNA_CLION_H
 #ifdef FELIX_EFTERBLIVNA_CLION_H
 #include "../HMM/hmm.h"
 #else

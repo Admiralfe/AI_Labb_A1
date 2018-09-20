@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cassert>
 
-#define FELIX_EFTERBLIVNA_CLION
+//#define FELIX_EFTERBLIVNA_CLION
 
 #ifdef FELIX_EFTERBLIVNA_CLION
 #include "Player.hpp"
@@ -97,7 +97,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
 
     if (current_tstep > 100 - (pState.getNumBirds() / SAFETY_FACTOR)
             //Only want to train on first two rounds
-            && pState.getRound() > 3
+            && pState.getRound() > 2
             //&& species_hmms.find(ESpecies::SPECIES_BLACK_STORK) != species_hmms.end()
         ) {
         //cerr << "Estimating model parameters..." << endl;
@@ -147,6 +147,16 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
                         p
                 };
             }
+        }
+
+        int storks = 0;
+        for (int i = 0; i < most_probable.size(); i++)
+            if (get<0>(most_probable[i]) == ESpecies::SPECIES_BLACK_STORK)
+                storks++;
+        
+        if (storks > most_probable.size() / 2) {
+            cerr << "X";
+            return cDontShoot;
         }
 
         /*for (int i = 0; i < no_birds; i++) {
