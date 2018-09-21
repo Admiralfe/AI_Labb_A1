@@ -24,7 +24,7 @@
 #define OBS_SEQ_INITIAL_SIZE 1000
 #define OBS_SEQ_SIZE 100
 #define NO_OBS_SEQS_INITIAL 10
-#define SAFETY_FACTOR 0.55
+#define SAFETY_FACTOR 0.5
 
 namespace ducks
 {
@@ -132,7 +132,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
             }
         }
 
-        int storks = 0;
+        /*int storks = 0;
         for (int i = 0; i < most_probable.size(); i++)
             if (get<0>(most_probable[i]) == ESpecies::SPECIES_BLACK_STORK)
                 storks++;
@@ -140,7 +140,7 @@ Action Player::shoot(const GameState &pState, const Deadline &pDue)
         if (storks > most_probable.size() / 2) {
             cerr << "X";
             return cDontShoot;
-        }
+        }*/
 
         /*for (int i = 0; i < no_birds; i++) {
             cerr << "stork prob test: " << stork_probabilities[i] << endl;
@@ -232,7 +232,7 @@ std::vector<ESpecies> Player::guess(const GameState &pState, const Deadline &pDu
 
     if (current_round == 0) {
         for (int i = 0; i < lGuesses.size(); i++)
-            lGuesses[i] = (ESpecies) (i % ESpecies::COUNT_SPECIES);
+            lGuesses[i] = ESpecies::SPECIES_PIGEON;
 
         blacklist = vector<ESpecies>();
         blacklist.push_back(SPECIES_BLACK_STORK);
