@@ -15,7 +15,7 @@ class Lambda {
         void reset();
 
         Lambda();
-        Lambda(const matrix& A, const matrix& B, const vector<number>& pi, const vector<int> &obs_seq);
+        Lambda(const matrix& A, const matrix& B, const vector<number>& pi);
 };
 
 Lambda init_lambda();
@@ -24,7 +24,6 @@ class hmm {
     public:
         static number obs_seq_prob(const Lambda& lambda, const pair<vector<int>, int>& observations);
         static int next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& observations, number& prob);
-        //static int next_obs_guess(const Lambda& lambda, pair<vector<int>, int>& observations, number& max_log_prob);
         static matrix* a_pass(const Lambda& lambda, vector<number>& c, const pair<vector<int>, int>& observations);
         static matrix* b_pass(const Lambda& lambda, const vector<number>& c, const matrix* alpha, const pair<vector<int>, int>& observations);
         static vector<int> viterbi(const Lambda& lambda, const pair<vector<int>, int>& observations);

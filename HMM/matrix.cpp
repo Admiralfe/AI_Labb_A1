@@ -16,6 +16,7 @@
 
 using namespace globals;
 
+//define this constant to remove all asserts
 #define SAFETY_OFF_MATRIX
 
 matrix::matrix(int height, int width){
@@ -25,11 +26,6 @@ matrix::matrix(int height, int width){
     this->height = height;
     this->width = width;
     this->elements = vector<vector<number>>(height, vector<number>(width));
-    
-    /*
-    for (int i = 0; i < height; i++)
-        this->elements[i] = vector<T>(width);
-        */
 }
 
 vector<number> matrix::operator *(const vector<number>& v) {
@@ -228,7 +224,7 @@ matrix matrix::parse_stdin() {
     return res;
 }
 
-//se ovan
+//see above
 vector<int> matrix::parse_intvec_stdin() {
     //Will contain stdin split by whitespace.
     vector<string> input;
@@ -297,6 +293,7 @@ void matrix::to_stdout() const {
     }
 }
 
+//element-wise distance between two matrices
 //use -1 for infinity norm
 number matrix::distance(const matrix& other, int norm) const {
     #ifndef SAFETY_OFF_MATRIX
@@ -333,6 +330,7 @@ number matrix::distance(const matrix& other, int norm) const {
     return res;
 }
 
+//element-wise distance between two matrix rows
 number matrix::row_distance_squared(const matrix& other, int i1, int i2) const {
     number sum = 0;
     for (int j = 0; j < width; j++)
@@ -341,7 +339,7 @@ number matrix::row_distance_squared(const matrix& other, int i1, int i2) const {
     return sum;
 }
 
-//beräkna det ungefärliga kvadrerade avståndet mellan två matriser, utan hänsyn till radnumrering
+//calculate the approximate square distance between two matrices, disregarding row numbering
 number matrix::distance_squared(const matrix& other) const {
     #ifndef SAFETY_OFF_MATRIX
     assert(height == other.height);
@@ -374,9 +372,9 @@ number matrix::distance_squared(const matrix& other) const {
     return total_dist;
 }
 
-//beräkna det ungefärliga kvadrerade avståndet mellan två matriser, utan hänsyn till radnumrering
-//sparar radnumreringen för översättning mellan matrisernas index i reordering, vars .size() ska vara lika med this->height
-//om square_reordered_matrices så används istället elementen i reordering för att jämföra de två matriserna, som ska vara kvadratiska
+//calculate the approximate square distance between two matrixes, disregarding row numbering
+//saves the row numbering for translation between the matrice's indexes in reordering, whose .size() should be equal to this->height
+//if the flag square_reordered_matrices is set then the elements in reordering will be used to compare the two matrices, which should be square
 number matrix::distance_squared(const matrix& other, vector<int>& reordering, bool square_reordered_matrices) const {
     #ifndef SAFETY_OFF_MATRIX
     assert(height == other.height);
@@ -443,6 +441,7 @@ ostream& operator<< (ostream& outs, const vector<int>& v) {
     return outs;
 }
 
+//scalar product of two vectors
 number operator *(const vector<number>& a, const vector<number>& b) {
     #ifndef SAFETY_OFF_MATRIX
     assert(a.size() == b.size());

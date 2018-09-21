@@ -13,7 +13,8 @@
 #define NO_HS 3
 #define VARIANCE 0.04
 #define TIME_OUT -2
-//#define ALWAYS_ROW_STOCHASTIC
+
+//define this constant to remove all asserts
 #define SAFETY_OFF_HMM
 
 using namespace globals;
@@ -22,13 +23,14 @@ using namespace std;
 typedef matrix mat;
 typedef vector<number> vec;
 
+//create a new HMM with nearly uniform A, B and pi
 Lambda::Lambda() {
     A = matrix::random_uniform(NO_HS, NO_HS, VARIANCE);
     B = matrix::random_uniform(NO_HS, NO_OBS, VARIANCE);
     pi = matrix::random_uniform(1, NO_HS, VARIANCE).get_row(0);
 }
 
-Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<number>& init_state, const vector<int>& observations) {
+Lambda::Lambda(const matrix& transition, const matrix& emission, const vector<number>& init_state) {
     A = transition;
     B = emission;
     pi = init_state;
@@ -41,52 +43,8 @@ void Lambda::reset() {
     pi = matrix::random_uniform(1, NO_HS, VARIANCE).get_row(0);
 }
 
-/*
- * Returns the most likely next observation given a model lambda and a current observation sequence.
- * max_log_prob will be set to the probability of that most likely observation upon function return.
- */
-/*int hmm::next_obs_guess(const Lambda& lambda, pair<vector<int>, int>& observations, number& max_log_prob) {
-    int no_diff_obs = lambda.B.getWidth();
-
-    number norm_factor = 0;
-    max_log_prob = -std::numeric_limits<number>::infinity();
-    number log_prob;
-    int next_obs_guess = 0;
-
-    //cerr << "In next_obs_guess: " << lambda.obs_seq[lambda.no_obs - 1] << endl;
-
-    //Iterate through the possible next observations
-    for (int obs = 0; obs < no_diff_obs; obs++) {
-        vector<number> c = vector<number>(observations.second + 1);
-
-        //Add next observation guess to the sequence
-        observations.first[observations.second] = obs;
-        observations.second++;
-        matrix alpha_normed = hmm::a_pass(lambda, c, observations);
-        //Compute log probability and pick maximum probability one.
-        log_prob = 0;
-        for (int i = 0; i < observations.second; i++) {
-            log_prob += log(c[i]);
-        }
-        log_prob = -log_prob;
-
-        //cerr << "current (log) probability: " << log_prob << endl;
-        //cerr << "max (log) probability: " << max_log_prob << endl;
-        if (log_prob > max_log_prob) {
-            next_obs_guess = obs;
-            max_log_prob = log_prob;
-        }
-
-        norm_factor += exp(log_prob);
-
-        //This effectively removes the added observation guess from obs_seq.
-        observations.second--;
-    }
-
-    return next_obs_guess;
-}
- */
-
+//guess the next observation based on a known sequence and an HMM
+//also puts the estimated probability in max_prob
 int hmm::next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& observations, number& max_prob) {
     int no_diff_obs = lambda.B.getWidth();
     int no_states = lambda.A.getWidth();
@@ -94,8 +52,6 @@ int hmm::next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& obse
     int next_obs_guess = 0;
     number prob;
     max_prob = 0;
-
-    //cerr << "In next_obs_guess: " << lambda.obs_seq[lambda.no_obs - 1] << endl;
 
     //Iterate through the possible next observations
     for (int obs = 0; obs < no_diff_obs; obs++) {
@@ -109,7 +65,6 @@ int hmm::next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& obse
                 inner += lambda.A.get(j, i) * alpha_normed->get(j, observations.second - 1);
             }
 
-            //cerr << "inner sum: " << inner << endl;
             prob += lambda.B.get(i, obs) * inner;
         }
 
@@ -119,14 +74,12 @@ int hmm::next_obs_guess(const Lambda& lambda, const pair<vector<int>, int>& obse
         }
 
         delete alpha_normed;
-
-        //This effectively removes the added observation guess from obs_seq.
-        //lambda.no_obs--;
     }
 
     return next_obs_guess;
 }
 
+//calculate the probability of seeing a certain sequence of observations from a certain HMM
 number hmm::obs_seq_prob(const Lambda& lambda, const pair<vector<int>, int>& observations) {
     number log_prob = 0;
 
@@ -142,14 +95,13 @@ number hmm::obs_seq_prob(const Lambda& lambda, const pair<vector<int>, int>& obs
 
     return log_prob;
 }
-//gör en alpha-pass med givna parameterar och returnerar alpha-matrisen,
-//förutsätter att vektorn c är initialiserad med nollor och har samma längd som obs_seq
-//c kommer att populeras med normeringskonstanter
+
+//perform an alpha-pass with the given parameters and return the alpha matrix
+//assumes the vector c has been initialized, and has the same length as the observation sequence
+//c will be filled with the normalization constants
 matrix* hmm::a_pass(const Lambda& lambda, vector<number>& c, const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
     int seq_length = observations.second;
-
-    //cerr << "XD " << seq_length << endl;
     
     #ifndef SAFETY_OFF_HMM
     assert(lambda.A.getWidth() == no_states);
@@ -194,7 +146,8 @@ matrix* hmm::a_pass(const Lambda& lambda, vector<number>& c, const pair<vector<i
     return alpha;
 }
 
-//förutsätter att en alpha-pass redan gjorts och att värdena i c inte har ändrats
+//perform a beta-pass with the given parameters and return the beta matrix
+//assumes that an alpha pass has already been done so that the normalization constants in c can be used
 matrix* hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix* alpha,
                    const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
@@ -227,26 +180,10 @@ matrix* hmm::b_pass(const Lambda& lambda, const vector<number>& c, const matrix*
         }
     }
 
-    /*
-    int current_max;
-    int current;
-
-    vector<int> res = vector<int>(seq_length);
-
-    for (int t = 0; t < seq_length; t++) {
-        current_max = -1;
-        for (int i = 0; i < no_states; i++) {
-            current = alpha.get(i, t) * beta.get(i, t);
-            if (current > current_max) {
-                current_max = current;
-                res[t] = i;
-            }
-        }
-    }*/
-
     return beta;
 }
 
+//viterbi algorithm for finding the most likely state sequence to have produced the given observation sequence
 vector<int> hmm::viterbi(const Lambda& lambda, const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
     int seq_length = observations.second;
@@ -315,21 +252,17 @@ vector<int> hmm::viterbi(const Lambda& lambda, const pair<vector<int>, int>& obs
     return res;
 }
 
+//train the provided HMM on the given observation sequence until convergence or max_iter iterations is reached
 int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observations, bool verbose, int max_iter) {
-    cerr << "a" << endl;
     vector<number> c = vector<number>(observations.second);
     int iters = 0;
     int maxiters = max_iter;
 
     number old_log_prob = -std::numeric_limits<number>::infinity();
 
-    cerr << "b" << endl;
     matrix* alpha = hmm::a_pass(lambda, c, observations);
-    cerr << "c" << endl;
     matrix* beta = hmm::b_pass(lambda, c, alpha, observations);
-    cerr << "d" << endl;
     hmm::reestimate(lambda, alpha, beta, observations);
-    cerr << "e" << endl;
 
     delete alpha;
     delete beta;
@@ -345,9 +278,9 @@ int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observatio
         log_prob = -log_prob;
 
         if (verbose && ((iters & 15) == 15)) {
-            //cout << iters << ":\t" << log_prob << endl;
-            //if ((iters & 255) == 255)
-            //    cout.flush();
+            cout << iters << ":\t" << log_prob << endl;
+            if ((iters & 255) == 255)
+                cout.flush();
         }
 
         if (log_prob - old_log_prob > PROB_EPSILON) {
@@ -364,10 +297,8 @@ int hmm::model_estimate(Lambda& lambda, const pair<vector<int>, int>& observatio
     return -iters;
 }
 
-/*
- * Overloaded version of model_estimate, which uses multiple independent observation sequences which are thought to
- * belong to the same model.
- */
+//Alternate version of model_estimate, which uses multiple independent observation sequences
+//which are thought to belong to the same model
 void hmm::model_estimate(Lambda& lambda, const vector<pair<vector<int>, int>>& observations, bool verbose, int max_iter) {
     vector<number> c = vector<number>(observations[0].second);
     int iters = 0;
@@ -395,13 +326,13 @@ void hmm::model_estimate(Lambda& lambda, const vector<pair<vector<int>, int>>& o
     }
 }
 
-//Comparison if two float values are within EPSILON of each other.
+//Comparison of whether two float values are within EPSILON of each other.
 bool number_equal(number a, number b) {
     return abs(a - b) < EPSILON;
 }
 
-//räknar ut ny modell (A, B, pi) utifrån datan från en alpha- och en beta-pass
-//A, B och pi kommer att skrivas över
+//calculates a new HMM (A, B, pi) from the data provided by an alpha and a beta pass
+//A, B and pi in lambda will be overwritten
 void hmm::reestimate(Lambda& lambda, const matrix* alpha, const matrix* beta, const pair<vector<int>, int>& observations) {
     int no_states = lambda.A.getHeight();
     int seq_length = observations.second;
@@ -488,60 +419,9 @@ void hmm::reestimate(Lambda& lambda, const matrix* alpha, const matrix* beta, co
         delete digamma[t];
         digamma[t] = nullptr;
     }
-
-    #ifdef ALWAYS_ROW_STOCHASTIC
-    bool A_needed = false, B_needed = false, pi_needed = false;
-    //A
-    for (int i = 0; i < no_states; i++) {
-        number sum = 0;
-        for (int j = 0; j < no_states; j++)
-            sum += lambda.A.get(i, j);
-        if (!number_equal(sum, 1)) {
-            A_needed = true;
-            cerr << "A_" << i << " needed fixing (" << sum << ")" << endl;
-            sum = 1 / sum;
-            for (int j = 0; j < no_states; j++)
-                lambda.A.set(i, j, lambda.A.get(i, j) * sum);
-        }
-    }
-    //B
-    for (int i = 0; i < no_states; i++) {
-        number sum = 0;
-        for (int j = 0; j < lambda.B.getWidth(); j++)
-            sum += lambda.B.get(i, j);
-        if (!number_equal(sum, 1)) {
-            B_needed = true;
-            cerr << "B_" << i << " needed fixing (" << sum << ")" << endl;
-            sum = 1 / sum;
-            for (int j = 0; j < lambda.B.getWidth(); j++)
-                lambda.B.set(i, j, lambda.B.get(i, j) * sum);
-        }
-    }
-    //pi
-    {
-        number sum = 0;
-        for (int j = 0; j < lambda.pi.size(); j++)
-            sum += lambda.pi[j];
-        if (!number_equal(sum, 1)) {
-            pi_needed = true;
-            cerr << "pi needed fixing (" << sum << ")" << endl;
-            sum = 1 / sum;
-            for (int j = 0; j < lambda.pi.size(); j++)
-                lambda.pi[j] *= sum;
-        }
-    }
-
-    if (A_needed)
-        cerr << "A is now" << endl << lambda.A << endl;
-        
-    if (B_needed)
-        cerr << "B is now" << endl << lambda.B << endl;
-        
-    if (pi_needed)
-        cerr << "pi is now" << endl << lambda.pi << endl;
-    #endif
 }
-
+//calculates a new HMM (A, B, pi) from the data provided by an alpha and a beta pass
+//will take into consideration multiple observation sequences
 Lambda hmm::mult_seq_estimate(const Lambda& lambda, const vector<matrix*>& alphas, const vector<matrix*>& betas, const vector<pair<vector<int>, int>>& observations) {
     int no_states = lambda.A.getHeight();
     int no_observation_sequences = observations.size();
@@ -643,55 +523,4 @@ Lambda hmm::mult_seq_estimate(const Lambda& lambda, const vector<matrix*>& alpha
     }
 
     return res;
-#ifdef ALWAYS_ROW_STOCHASTIC
-    bool A_needed = false, B_needed = false, pi_needed = false;
-    //A
-    for (int i = 0; i < no_states; i++) {
-        number sum = 0;
-        for (int j = 0; j < no_states; j++)
-            sum += lambda.A.get(i, j);
-        if (!number_equal(sum, 1)) {
-            A_needed = true;
-            cerr << "A_" << i << " needed fixing (" << sum << ")" << endl;
-            sum = 1 / sum;
-            for (int j = 0; j < no_states; j++)
-                lambda.A.set(i, j, lambda.A.get(i, j) * sum);
-        }
-    }
-    //B
-    for (int i = 0; i < no_states; i++) {
-        number sum = 0;
-        for (int j = 0; j < lambda.B.getWidth(); j++)
-            sum += lambda.B.get(i, j);
-        if (!number_equal(sum, 1)) {
-            B_needed = true;
-            cerr << "B_" << i << " needed fixing (" << sum << ")" << endl;
-            sum = 1 / sum;
-            for (int j = 0; j < lambda.B.getWidth(); j++)
-                lambda.B.set(i, j, lambda.B.get(i, j) * sum);
-        }
-    }
-    //pi
-    {
-        number sum = 0;
-        for (int j = 0; j < lambda.pi.size(); j++)
-            sum += lambda.pi[j];
-        if (!number_equal(sum, 1)) {
-            pi_needed = true;
-            cerr << "pi needed fixing (" << sum << ")" << endl;
-            sum = 1 / sum;
-            for (int j = 0; j < lambda.pi.size(); j++)
-                lambda.pi[j] *= sum;
-        }
-    }
-
-    if (A_needed)
-        cerr << "A is now" << endl << lambda.A << endl;
-
-    if (B_needed)
-        cerr << "B is now" << endl << lambda.B << endl;
-
-    if (pi_needed)
-        cerr << "pi is now" << endl << lambda.pi << endl;
-#endif
 }
